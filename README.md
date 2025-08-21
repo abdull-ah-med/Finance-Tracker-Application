@@ -37,14 +37,14 @@ This project was created to gain hands-on experience with:
 - **Tailwind CSS**: Utility-first CSS framework
 - **React Router**: Client-side routing
 
-## 📋 Prerequisites
+## Prerequisites
 
 To run this project locally, you'll need:
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [PostgreSQL](https://www.postgresql.org/download/) (v13 or higher)
 
-## � Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 ```bash
@@ -121,7 +121,7 @@ FinanceTracker/
 └── README.md
 ```
 
-## � What I Learned
+## What I Learned
 
 Through building this project, I gained experience with:
 
@@ -132,13 +132,6 @@ Through building this project, I gained experience with:
 - **Validation**: Using FluentValidation for robust input validation
 - **Service Layer**: Separating business logic from controllers
 - **Error Handling**: Proper HTTP status codes and error responses
-
-### Frontend Development
-- **React Hooks**: useState, useEffect, useContext for state management
-- **TypeScript Integration**: Type safety in React applications
-- **API Integration**: Making HTTP requests and handling responses
-- **Routing**: Protected routes and navigation
-- **Form Handling**: Controlled components and validation
 
 ### Database Design
 - **Entity Relationships**: One-to-many relationships between Users, Accounts, and Transactions
