@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AccountCategory> AccountCategories { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true); 
         // User constraints
         modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
         modelBuilder.Entity<User>().Property(u => u.FullName).IsRequired().HasMaxLength(100);
@@ -58,6 +59,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithOne(t => t.AccountCategory)
             .HasForeignKey(t => t.AccountCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Seed data for categories
+        modelBuilder.Entity<AccountCategory>().HasData(
+            new AccountCategory { Id = 1, Name = "Checking" },
+            new AccountCategory { Id = 2, Name = "Savings" },
+            new AccountCategory { Id = 3, Name = "Credit Card" },
+            new AccountCategory { Id = 4, Name = "Investment" },
+            new AccountCategory { Id = 5, Name = "Cash" }
+        );
+
+        modelBuilder.Entity<TransactionCategory>().HasData(
+            new TransactionCategory { Id = 1, Name = "Income" },
+            new TransactionCategory { Id = 2, Name = "Food & Dining" },
+            new TransactionCategory { Id = 3, Name = "Transportation" },
+            new TransactionCategory { Id = 4, Name = "Shopping" },
+            new TransactionCategory { Id = 5, Name = "Entertainment" },
+            new TransactionCategory { Id = 6, Name = "Bills & Utilities" },
+            new TransactionCategory { Id = 7, Name = "Healthcare" },
+            new TransactionCategory { Id = 8, Name = "Education" },
+            new TransactionCategory { Id = 9, Name = "Investment" },
+            new TransactionCategory { Id = 10, Name = "Other" }
+        );
 
         base.OnModelCreating(modelBuilder);
     }

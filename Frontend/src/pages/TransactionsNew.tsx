@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { api } from '../utils/api';
+import { auth } from '../utils/auth';
 import type { Transaction, Account, Category, CreateTransaction } from '../types';
 
 export function Transactions() {
@@ -25,11 +26,15 @@ export function Transactions() {
 
   const fetchData = async () => {
     try {
-        const [transactionsResponse, accountsResponse, categoriesResponse] = await Promise.all([
-          api.get('/user/transactions/fetch'),
-          api.get('/user/accounts/list'),
-          api.get('/categories/transactions')
-        ]);
+      const token = auth.getToken();
+      if (!token) return;
+
+      // Fetch all data in parallel
+      const [transactionsResponse, accountsResponse, categoriesResponse] = await Promise.all([
+        api.get('/user/transactions/fetch' ),
+        api.get('/user/accounts/list' ),
+        api.get('/categories/transactions' )
+      ]);
 
       if (transactionsResponse.success) {
         setTransactions(transactionsResponse.data?.transactions || []);
@@ -56,6 +61,9 @@ export function Transactions() {
   const handleCreateTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const token = auth.getToken();
+      if (!token) return;
+
       const response = await api.post('/user/transactions/create', newTransaction );
       if (response.success) {
         await fetchData(); // Refresh the list

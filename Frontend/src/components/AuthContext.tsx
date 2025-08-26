@@ -10,32 +10,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const token = auth.getToken();
-    if (token) {
-      // Verify token and get user info
-      api.get('/auth/me', token)
-        .then((response) => {
-          if (response.success) {
-            setUser(response.user);
-          } else {
-            auth.removeToken();
+    // Always try to verify user, even if only cookie is present
+  api.get('/auth/me'  || undefined)
+      .then((response) => {
+        if (response.success) {
+          setUser(response.user);
+          // If token is not in localStorage but present in response, set it
+          if (response.token && !token) {
+            // No need to set token, cookie is used
           }
-        })
-        .catch(() => {
+        } else {
           auth.removeToken();
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
-    }
+        }
+      })
+      .catch(() => {
+        auth.removeToken();
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response: AuthResponse = await api.post('/auth/signin', { email, password });
       if (response.success) {
-        auth.setToken(response.token);
         setUser(response.user);
         return true;
       }
@@ -49,7 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response: AuthResponse = await api.post('/auth/signup', { fullName: name, email, password });
       if (response.success) {
-        auth.setToken(response.token);
         setUser(response.user);
         return true;
       }

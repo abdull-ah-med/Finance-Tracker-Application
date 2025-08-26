@@ -9,10 +9,12 @@ namespace Backend.Services;
 public class TransactionService : ITransactionService
 {
     private readonly AppDbContext _context;
+
     public TransactionService(AppDbContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
+
     public async Task<ServiceResult<ResponseTransactionDTO>> CreateTransactionAsync(CreateTransactionDTO createTransactionDTO, int userID)
     {
         var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == createTransactionDTO.AccountId && a.UserId == userID);
@@ -25,20 +27,29 @@ public class TransactionService : ITransactionService
                 StatusCode = 404
             };
         }
-        account.Balance = account.Balance + createTransactionDTO.Amount;
+
+        if (createTransactionDTO.TransactionType == 'C')
+        {
+            account.Balance += createTransactionDTO.Amount;
+        }
+        else if (createTransactionDTO.TransactionType == 'D') // Expense
+        {
+            account.Balance -= createTransactionDTO.Amount;
+        }
+
         var newTransaction = new Transaction
         {
             Amount = createTransactionDTO.Amount,
             TransactionDateTime = createTransactionDTO.TransactionDateTime,
             Description = createTransactionDTO.Description ?? string.Empty,
             AccountId = account.Id,
-            TransactionCategoryId = createTransactionDTO.TransactionCategoryId
+            TransactionCategoryId = createTransactionDTO.TransactionCategoryId,
+            TransactionType = createTransactionDTO.TransactionType
         };
 
         await _context.Transactions.AddAsync(newTransaction);
         await _context.SaveChangesAsync();
-        
-        // Load navigation properties with a single query
+
         var transactionWithIncludes = await _context.Transactions
             .Include(t => t.Account)
             .Include(t => t.TransactionCategory)
@@ -63,15 +74,17 @@ public class TransactionService : ITransactionService
             {
                 Id = transactionWithIncludes.Id,
                 Amount = transactionWithIncludes.Amount,
-                TransactionDateTime = transactionWithIncludes.TransactionDateTime,
+                TransactionDateTime = DateTime.SpecifyKind(createTransactionDTO.TransactionDateTime, DateTimeKind.Utc),
                 Description = transactionWithIncludes.Description,
                 AccountId = transactionWithIncludes.AccountId,
                 AccountName = transactionWithIncludes.Account.Name,
                 TransactionCategoryId = transactionWithIncludes.TransactionCategoryId,
-                TransactionCategoryName = transactionWithIncludes.TransactionCategory.Name
+                TransactionCategoryName = transactionWithIncludes.TransactionCategory.Name,
+                TransactionType = transactionWithIncludes.TransactionType
             }
         };
     }
+
     public async Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID)
     {
         var accounts = await _context.Accounts.AnyAsync(a => a.UserId == userID);
@@ -84,20 +97,24 @@ public class TransactionService : ITransactionService
                 StatusCode = 404
             };
         }
+
         var transactions = await _context.Transactions
             .Include(t => t.Account)
             .Include(t => t.TransactionCategory)
             .Where(t => t.Account.UserId == userID)
+            .OrderByDescending(t => t.TransactionDateTime)
             .ToListAsync();
-        if (transactions == null|| !transactions.Any())
+
+        if (transactions == null || !transactions.Any())
         {
             return new ServiceResult<TransactionResponseListDTO>
             {
-                Success = false,
+                Success = true,
                 Message = "There are no transactions against User.",
-                StatusCode = 404
+                StatusCode = 200
             };
         }
+
         var responseTransactions = transactions.Select(t => new ResponseTransactionDTO
         {
             Id = t.Id,
@@ -107,8 +124,10 @@ public class TransactionService : ITransactionService
             AccountId = t.AccountId,
             AccountName = t.Account.Name,
             TransactionCategoryId = t.TransactionCategoryId,
-            TransactionCategoryName = t.TransactionCategory.Name
+            TransactionCategoryName = t.TransactionCategory.Name,
+            TransactionType = t.TransactionType
         }).ToList();
+
         return new ServiceResult<TransactionResponseListDTO>
         {
             Success = true,
@@ -118,13 +137,13 @@ public class TransactionService : ITransactionService
                 Transactions = responseTransactions,
                 TotalCount = responseTransactions.Count
             }
-
         };
     }
+
     public async Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID, int accountID)
     {
-        var accounts = await _context.Accounts.FirstOrDefaultAsync(a => a.UserId == userID && a.Id == accountID);
-        if (accounts == null)
+        var account = await _context.Accounts.FirstOrDefaultAsync(a => a.UserId == userID && a.Id == accountID);
+        if (account == null)
         {
             return new ServiceResult<TransactionResponseListDTO>
             {
@@ -133,12 +152,15 @@ public class TransactionService : ITransactionService
                 StatusCode = 404
             };
         }
+
         var transactions = await _context.Transactions
             .Include(t => t.Account)
             .Include(t => t.TransactionCategory)
             .Where(t => t.Account.UserId == userID && t.AccountId == accountID)
+            .OrderByDescending(t => t.TransactionDateTime)
             .ToListAsync();
-        if (transactions == null|| !transactions.Any())
+
+        if (transactions == null || !transactions.Any())
         {
             return new ServiceResult<TransactionResponseListDTO>
             {
@@ -147,6 +169,7 @@ public class TransactionService : ITransactionService
                 StatusCode = 404
             };
         }
+
         var responseTransactions = transactions.Select(t => new ResponseTransactionDTO
         {
             Id = t.Id,
@@ -156,8 +179,10 @@ public class TransactionService : ITransactionService
             AccountId = t.AccountId,
             AccountName = t.Account.Name,
             TransactionCategoryId = t.TransactionCategoryId,
-            TransactionCategoryName = t.TransactionCategory.Name
+            TransactionCategoryName = t.TransactionCategory.Name,
+            TransactionType = t.TransactionType
         }).ToList();
+
         return new ServiceResult<TransactionResponseListDTO>
         {
             Success = true,
@@ -167,9 +192,9 @@ public class TransactionService : ITransactionService
                 Transactions = responseTransactions,
                 TotalCount = responseTransactions.Count
             }
-
         };
     }
+
     public async Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID, int accountID, int TransactionCategoryId)
     {
         var accountExists = await _context.Accounts.FirstOrDefaultAsync(a => a.UserId == userID && a.Id == accountID);
@@ -182,21 +207,24 @@ public class TransactionService : ITransactionService
                 StatusCode = 404
             };
         }
-        
+
         var transactions = await _context.Transactions
             .Include(t => t.Account)
             .Include(t => t.TransactionCategory)
             .Where(t => t.Account.UserId == userID && t.AccountId == accountID && t.TransactionCategoryId == TransactionCategoryId)
+            .OrderByDescending(t => t.TransactionDateTime)
             .ToListAsync();
+
         if (transactions == null || !transactions.Any())
         {
             return new ServiceResult<TransactionResponseListDTO>
             {
-                Success = false,
+                Success = true,
                 Message = "No transactions found against these filters",
-                StatusCode = 404
+                StatusCode = 200
             };
         }
+
         var responseTransactions = transactions.Select(t => new ResponseTransactionDTO
         {
             Id = t.Id,
@@ -206,8 +234,10 @@ public class TransactionService : ITransactionService
             AccountId = t.AccountId,
             AccountName = t.Account.Name,
             TransactionCategoryId = t.TransactionCategoryId,
-            TransactionCategoryName = t.TransactionCategory.Name
+            TransactionCategoryName = t.TransactionCategory.Name,
+            TransactionType = t.TransactionType
         }).ToList();
+
         return new ServiceResult<TransactionResponseListDTO>
         {
             Success = true,
@@ -218,6 +248,5 @@ public class TransactionService : ITransactionService
                 TotalCount = responseTransactions.Count
             }
         };
-
     }
 }

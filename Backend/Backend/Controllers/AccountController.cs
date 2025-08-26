@@ -8,25 +8,24 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 [ApiController]
+[Route("api/user/accounts")]
 [Authorize]
-[Route("/api/user/accounts")]
-class AccountController(IAccountService AS) : ControllerBase
+public class AccountsController(IAccountService AS) : ControllerBase
 {
+
     [HttpPost("create")]
     public async Task<IActionResult> CreateAccount([FromBody] CreateAccountDTO createAccountDTO)
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            if (userId > 0)
-            {
-                var actionResult = await AS.CreateAccountAsync(createAccountDTO, userId);
-                return StatusCode(actionResult.StatusCode, actionResult);
-            }
-            else
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || userId <= 0)
             {
                 return BadRequest("User not authorized");
             }
+
+            var actionResult = await AS.CreateAccountAsync(createAccountDTO, userId);
+            return StatusCode(actionResult.StatusCode, actionResult);
         }
         catch (Exception ex)
         {
@@ -38,21 +37,39 @@ class AccountController(IAccountService AS) : ControllerBase
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            if (userId > 0)
-            {
-                var actionResult = await AS.UpdateAccountAsync(updateAccountDTO, userId);
-                return StatusCode(actionResult.StatusCode, actionResult);
-            }
-            else
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || userId <= 0)
             {
                 return BadRequest("User not authorized");
             }
+
+            var actionResult = await AS.UpdateAccountAsync(updateAccountDTO, userId);
+            return StatusCode(actionResult.StatusCode, actionResult);
         }
         catch (Exception ex)
         {
             return StatusCode(500, ex);
         }
     }
+    [HttpGet("list")]
+    public async Task<IActionResult> GetAccounts()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+            if (!int.TryParse(userIdClaim, out var userId) || userId <= 0)
+            {
+                return Unauthorized("User not authorized");
+            }
+
+            var actionResult = await AS.GetAccountsAsync(userId);
+            return StatusCode(actionResult.StatusCode, actionResult);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "An unexpected error occurred.");
+        }
+    }
+    
 }

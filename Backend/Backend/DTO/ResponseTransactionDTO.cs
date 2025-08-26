@@ -11,5 +11,6 @@ public class ResponseTransactionDTO
     public string AccountName { get; set; } = string.Empty;
     public int TransactionCategoryId { get; set; }
     public string TransactionCategoryName { get; set; } = string.Empty;
+    public char TransactionType { get; set; }
     public string? Description { get; set; }
 }

@@ -3,6 +3,7 @@ using System;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250821121408_UpdatedTransactionService")]
+    partial class UpdatedTransactionService
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,33 +75,6 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("AccountCategories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Checking"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Savings"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Credit Card"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "Investment"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Name = "Cash"
-                        });
                 });
 
             modelBuilder.Entity("Backend.Models.Transaction", b =>
@@ -126,9 +102,6 @@ namespace Backend.Migrations
                     b.Property<DateTime>("TransactionDateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<char>("TransactionType")
-                        .HasColumnType("character(1)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
@@ -154,58 +127,6 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TransactionCategories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Income"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Food & Dining"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Transportation"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "Shopping"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Name = "Entertainment"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Name = "Bills & Utilities"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Name = "Healthcare"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Name = "Education"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Name = "Investment"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Name = "Other"
-                        });
                 });
 
             modelBuilder.Entity("Backend.Models.User", b =>

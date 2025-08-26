@@ -12,6 +12,8 @@ public interface IAccountService
     Task<Account> GetAccountAsync(string accountName, int accountCategoryId, int userId);
     Task<User> GetUserAsync(int userId);
     Task<Account> GetAccountAsync(UpdateAccountDTO updateAccountDTO, int userId);
+    Task<ServiceResult<AccountResponseDTO>> GetAccountAsync(int userId, int accountId);
+    Task<ServiceResult<AccountResponseListDTO>> GetAccountsAsync(int userId);
 
 }
 

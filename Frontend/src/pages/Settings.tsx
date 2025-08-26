@@ -18,7 +18,12 @@ export function Settings() {
 
     try {
       const token = auth.getToken();
-      const response = await api.put('/auth/profile', { name, email }, token);
+      if (!token) {
+        setMessage('Authentication required');
+        return;
+      }
+      
+      const response = await api.put('/auth/profile', { name, email } );
       if (response.success) {
         setMessage('Profile updated successfully');
       } else {

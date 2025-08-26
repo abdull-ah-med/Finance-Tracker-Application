@@ -14,19 +14,40 @@ export interface AuthResponse {
 export interface Account {
   id: number;
   name: string;
-  type: string;
+  accountCategoryId: number;
+  accountCategoryName: string;
   balance: number;
-  userId: number;
 }
 
 export interface Transaction {
   id: number;
   amount: number;
   description: string;
-  category: string;
-  date: string;
+  transactionCategoryId: number;
+  transactionCategoryName: string;
+  transactionDateTime: string;
   accountId: number;
-  type: 'income' | 'expense';
+  accountName: string;
+  transactionType: 'C' | 'D'; 
+}
+
+export interface Category {
+  id: number;
+  name: string;
+}
+
+export interface CreateTransaction {
+  amount: number;
+  transactionDateTime: string;
+  accountId: number;
+  transactionCategoryId: number;
+  transactionType: 'C' | 'D';
+  description?: string;
+}
+
+export interface CreateAccount {
+  name: string;
+  accountCategoryId: number;
 }
 
 export interface AuthContextType {

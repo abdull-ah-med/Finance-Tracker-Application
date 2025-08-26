@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -6,8 +6,22 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, isLoading } = useAuth();
+
+
+  useEffect(() => {
+  }, [user, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="flex items-center space-x-3 text-slate-400">
+          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-lg">Checking authentication...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (user) {
     return <Navigate to="/accounts" replace />;
@@ -15,14 +29,11 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
-
     const success = await login(email, password);
     if (!success) {
       setError('Invalid email or password');
     }
-    setIsLoading(false);
   };
 
   return (

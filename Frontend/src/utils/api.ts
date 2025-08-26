@@ -1,63 +1,57 @@
 const API_BASE_URL = 'http://localhost:5046/api';
 
 export const api = {
-  async post(endpoint: string, data: any) {
+  async post(endpoint: string, data: unknown) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   },
 
-  async get(endpoint: string, token?: string) {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
+  async get(endpoint: string) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
     });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   },
 
-  async put(endpoint: string, data: any, token?: string) {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
+  async put(endpoint: string, data: unknown) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   },
 
-  async delete(endpoint: string, token?: string) {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
+  async delete(endpoint: string) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
     });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   },
 };

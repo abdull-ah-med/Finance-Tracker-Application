@@ -1,10 +1,10 @@
 import Cookies from 'js-cookie';
 
 export const auth = {
-  setToken(token: string) {
-    Cookies.set('auth_token', token, { expires: 7 });
-  },
+  // No-op: backend sets cookie, frontend does not need to set token
+  setToken(_token: string) {},
 
+  // Only read from cookie
   getToken(): string | undefined {
     return Cookies.get('auth_token');
   },
@@ -14,6 +14,6 @@ export const auth = {
   },
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return !!Cookies.get('auth_token');
   },
 };

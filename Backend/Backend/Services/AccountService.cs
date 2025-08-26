@@ -87,6 +87,61 @@ public class AccountService : IAccountService
             };
         }
     }
+    public async Task<ServiceResult<AccountResponseDTO>> GetAccountAsync(int userId, int accountId)
+    {
+        var accounts = await _context.Accounts.Include(a => a.AccountCategory).FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
+        if (accounts == null)
+        {
+            return new ServiceResult<AccountResponseDTO>
+            {
+                Success = false,
+                Message = "No Accounts with this User",
+                StatusCode = 404,
+            };
+        }
+        return new ServiceResult<AccountResponseDTO>
+        {
+            Success = true,
+            Message = "Account Successfully fetched",
+            StatusCode = 200,
+            Data = new AccountResponseDTO
+            {
+                Id = accounts.Id,
+                Name = accounts.Name,
+                Balance = accounts.Balance,
+                AccountCategoryId = accounts.AccountCategoryId,
+                AccountCategoryName = accounts.AccountCategory.Name,
+            }
+        };
+
+    }
+    public async Task<ServiceResult<AccountResponseListDTO>> GetAccountsAsync(int userId)
+    {
+        var responseAccounts = await _context.Accounts
+            .Include(a => a.AccountCategory)
+            .Where(a => a.UserId == userId)
+            .Select(a => new AccountResponseDTO
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Balance = a.Balance,
+                AccountCategoryId = a.AccountCategoryId,
+                AccountCategoryName = a.AccountCategory.Name,
+            })
+            .ToListAsync();
+
+        return new ServiceResult<AccountResponseListDTO>
+        {
+            Success = true,
+            Message = "Accounts retrieved successfully",
+            StatusCode = 200,
+            Data = new AccountResponseListDTO
+            {
+                Accounts = responseAccounts,
+                TotalCount = responseAccounts.Count
+            }
+        };
+    }
     public async Task<ServiceResult<AccountResponseDTO>> UpdateAccountAsync(UpdateAccountDTO updateAccountDTO, int userId)
     {
         try
