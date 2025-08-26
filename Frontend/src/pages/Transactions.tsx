@@ -424,9 +424,9 @@ export function Transactions() {
                                     {getNetAmount() >= 0 ? '+' : ''}${getNetAmount().toFixed(2)}
                                 </p>
                             </div>
-                            <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600">
-                                <DollarSign className="h-6 w-6 text-white" />
-                            </div>
+                                          <div className="p-3 rounded-xl bg-gradient-to-r from-gray-800 to-black border border-gray-700">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
                         </div>
                     </div>
                 </div>
@@ -460,9 +460,9 @@ export function Transactions() {
             {filteredTransactions.length === 0 ? (
                 <div className="text-center py-20">
                     <div className="glass-card rounded-2xl p-12 max-w-md mx-auto">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
-                            <Receipt className="h-10 w-10 text-white" />
-                        </div>
+                                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-gray-800 to-black flex items-center justify-center mx-auto mb-6 border border-gray-700">
+              <Receipt className="h-10 w-10 text-white" />
+            </div>
                         <h3 className="text-2xl font-bold text-white mb-3">No transactions yet</h3>
                         <p className="text-muted-modern mb-8 text-lg">
                             {selectedAccount
