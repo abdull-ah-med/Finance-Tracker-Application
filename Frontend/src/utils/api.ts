@@ -1,7 +1,7 @@
 const API_BASE_URL = 'http://localhost:5046/api';
 
 export const api = {
-  async post(endpoint: string, data: unknown) {
+  async post(endpoint: string, data?: unknown) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {

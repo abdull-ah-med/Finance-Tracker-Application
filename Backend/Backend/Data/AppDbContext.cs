@@ -59,8 +59,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithOne(t => t.AccountCategory)
             .HasForeignKey(t => t.AccountCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        // Seed data for categories
+            
         modelBuilder.Entity<AccountCategory>().HasData(
             new AccountCategory { Id = 1, Name = "Checking" },
             new AccountCategory { Id = 2, Name = "Savings" },

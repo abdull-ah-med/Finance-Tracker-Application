@@ -90,21 +90,21 @@ export function Transactions() {
   const getTransactionIcon = (categoryName: string) => {
     switch (categoryName.toLowerCase()) {
       case 'food':
-        return '🍽️';
+        return 'Food';
       case 'transportation':
-        return '🚗';
+        return 'Transportation';
       case 'entertainment':
-        return '🎬';
+        return 'Entertainment';
       case 'shopping':
-        return '🛍️';
+        return 'Shopping';
       case 'salary':
-        return '💰';
+        return 'Salary';
       case 'freelance':
-        return '💼';
+        return 'Freelance';
       case 'investment':
-        return '📈';
+        return 'Investment';
       default:
-        return '💳';
+        return categoryName;
     }
   };
 
@@ -178,8 +178,8 @@ export function Transactions() {
 
         {/* Create Transaction Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-slate-800 p-6 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+            <div className="bg-black text-white p-6 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
               <h3 className="text-xl font-bold text-white mb-4">Add New Transaction</h3>
               <form onSubmit={handleCreateTransaction}>
                 <div className="space-y-4">

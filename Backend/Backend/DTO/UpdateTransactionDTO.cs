@@ -3,8 +3,9 @@ using FluentValidation;
 
 namespace Backend.DTO;
 
-public class CreateTransactionDTO
+public class UpdateTransactionDTO
 {
+    public int Id{ get; set; }
     public decimal Amount { get; set; }
     public DateTime TransactionDateTime { get; set; }
     public int AccountId { get; set; }
@@ -12,10 +13,12 @@ public class CreateTransactionDTO
     public char TransactionType { get; set; }
     public string? Description { get; set; }
 }
-public class CreateTransactionDTOValidator : AbstractValidator<CreateTransactionDTO>
+public class UpdateTransactionDTOValidator : AbstractValidator<UpdateTransactionDTO>
 {
-    public CreateTransactionDTOValidator()
+    public UpdateTransactionDTOValidator()
     {
+
+        RuleFor(x => x.Id).GreaterThan(0).WithMessage("Invalid Transaction Id");
         RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Transaction Amount can not be zero");
         RuleFor(x => x.AccountId).GreaterThan(0).WithMessage("Account Id Invalid");
         RuleFor(x => x.TransactionCategoryId).GreaterThan(0).WithMessage("Category Id Invalid");

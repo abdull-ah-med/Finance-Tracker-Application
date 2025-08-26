@@ -67,15 +67,15 @@ export function Accounts() {
   const getAccountTypeIcon = (categoryName: string) => {
     switch (categoryName.toLowerCase()) {
       case 'checking':
-        return '🏦';
+        return 'Checking';
       case 'savings':
-        return '💰';
+        return 'Savings';
       case 'credit':
-        return '💳';
+        return 'Credit';
       case 'investment':
-        return '📈';
+        return 'Investment';
       default:
-        return '💼';
+        return categoryName;
     }
   };
 
@@ -118,8 +118,8 @@ export function Accounts() {
 
         {/* Create Account Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-slate-800 p-6 rounded-xl w-full max-w-md">
+          <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+            <div className="bg-black text-white p-6 rounded-xl w-full max-w-md">
               <h3 className="text-xl font-bold text-white mb-4">Create New Account</h3>
               <form onSubmit={handleCreateAccount}>
                 <div className="space-y-4">
@@ -192,7 +192,7 @@ export function Accounts() {
         {/* Accounts Grid */}
         {accounts.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏦</div>
+            <div className="text-6xl mb-4 font-bold text-primary">No Accounts</div>
             <h3 className="text-xl font-semibold text-white mb-2">No accounts yet</h3>
             <p className="text-slate-400 mb-6">Create your first account to start tracking your finances</p>
             <button 

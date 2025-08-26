@@ -14,11 +14,9 @@ export function Login() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="flex items-center space-x-3 text-slate-400">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-lg">Checking authentication...</span>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-base-100">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+        <span className="ml-4 text-lg text-base-content/70">Checking authentication...</span>
       </div>
     );
   }
@@ -37,23 +35,20 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-base-100 p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 text-2xl">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary text-white rounded-2xl mb-4 text-3xl shadow-lg">
             💰
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-slate-400">Sign in to your Finance Tracker account</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">Welcome Back</h1>
+          <p className="text-base-content/70">Sign in to your Finance Tracker account</p>
         </div>
-        
-        {/* Login Form */}
-        <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700/50 overflow-hidden">
-          <div className="p-6">
+        <div className="card bg-base-200 shadow-xl border border-base-300">
+          <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium mb-2 text-base-content/80">
                   Email Address
                 </label>
                 <input
@@ -61,14 +56,13 @@ export function Login() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="input input-bordered w-full"
                   placeholder="Enter your email"
                   required
                 />
               </div>
-              
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium mb-2 text-base-content/80">
                   Password
                 </label>
                 <input
@@ -76,40 +70,33 @@ export function Login() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="input input-bordered w-full"
                   placeholder="Enter your password"
                   required
                 />
               </div>
-              
               {error && (
-                <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
+                <div className="alert alert-error text-sm">
                   {error}
                 </div>
               )}
-              
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 w-full relative"
+                className="btn btn-primary w-full"
               >
                 {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
+                  <span className="loading loading-spinner loading-xs mr-2"></span>
+                ) : null}
+                Sign In
               </button>
             </form>
-            
-            <div className="mt-6 pt-6 border-t border-slate-700">
-              <p className="text-center text-slate-400 text-sm">
+            <div className="mt-6 pt-6 border-t border-base-300">
+              <p className="text-center text-base-content/70 text-sm">
                 Don't have an account?{' '}
                 <Link 
                   to="/signup" 
-                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
+                  className="text-primary font-medium hover:underline"
                 >
                   Create one here
                 </Link>

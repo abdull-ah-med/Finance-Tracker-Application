@@ -34,6 +34,15 @@ public class TransactionService : ITransactionService
         }
         else if (createTransactionDTO.TransactionType == 'D') // Expense
         {
+            if (createTransactionDTO.Amount > account.Balance)
+            {
+                return new ServiceResult<ResponseTransactionDTO>
+                {
+                    Success = false,
+                    Message = "Insufficient balance for this debit transaction.",
+                    StatusCode = 400
+                };
+            }
             account.Balance -= createTransactionDTO.Amount;
         }
 
@@ -248,5 +257,106 @@ public class TransactionService : ITransactionService
                 TotalCount = responseTransactions.Count
             }
         };
+    }
+    public async Task<ServiceResult<ResponseTransactionDTO>> UpdateTransaction(UpdateTransactionDTO updateTransactionDTO)
+    {
+        var transactionExists = await _context.Transactions.Include(t => t.TransactionCategory).FirstOrDefaultAsync(t => t.Id == updateTransactionDTO.Id);
+        if (transactionExists == null)
+        {
+            return new ServiceResult<ResponseTransactionDTO>
+            {
+                Success = false,
+                Message = "Invalid Transaction Id",
+                StatusCode = 404
+            };
+        }
+
+        var accountExists = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == updateTransactionDTO.AccountId);
+        if (accountExists == null)
+        {
+            return new ServiceResult<ResponseTransactionDTO>
+            {
+                Success = false,
+                Message = "Account not found",
+                StatusCode = 404
+            };
+        }
+
+
+        if (transactionExists.AccountId != updateTransactionDTO.AccountId)
+        {
+            {
+                var oldAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == transactionExists.AccountId);
+                if (transactionExists.TransactionType != updateTransactionDTO.TransactionType)
+                {
+
+                    if (transactionExists.TransactionType == 'C' && updateTransactionDTO.TransactionType == 'D')
+                    {
+                        if (oldAccount.Balance >= transactionExists.Amount && accountExists.Balance >= updateTransactionDTO.Amount)
+                        {
+                            oldAccount.Balance -= transactionExists.Amount;
+                            accountExists.Balance -= updateTransactionDTO.Amount;
+                            transactionExists.Amount = updateTransactionDTO.Amount;
+                            transactionExists.TransactionType = updateTransactionDTO.TransactionType;
+                            _context.Accounts.Update(oldAccount);
+                            _context.Accounts.Update(accountExists);
+                        }
+                        else
+                        {
+                            return new ServiceResult<ResponseTransactionDTO>
+                            {
+                                Success = false,
+                                Message = "Insufficient balance for this debit transaction.",
+                                StatusCode = 400
+                            };
+                        }
+                    }
+                    else if (transactionExists.TransactionType == 'D' && updateTransactionDTO.TransactionType == 'C')
+                    {
+
+                        oldAccount.Balance += transactionExists.Amount;
+                        accountExists.Balance += updateTransactionDTO.Amount;
+                        transactionExists.Amount = updateTransactionDTO.Amount;
+                        transactionExists.TransactionType = updateTransactionDTO.TransactionType;
+                        _context.Accounts.Update(oldAccount);
+                        _context.Accounts.Update(accountExists);
+                    }
+
+                }
+                else if (transactionExists.TransactionType == updateTransactionDTO.TransactionType)
+                {
+                    if (transactionExists.TransactionType == 'C')
+                    {
+                        oldAccount.Balance -= transactionExists.Amount;
+                        accountExists.Balance += updateTransactionDTO.Amount;
+                        transactionExists.Amount = updateTransactionDTO.Amount;
+                        _context.Accounts.Update(oldAccount);
+                        _context.Accounts.Update(accountExists);
+                    }
+                    else if (transactionExists.TransactionType == 'D')
+                    {
+                        if (accountExists.Balance + transactionExists.Amount >= updateTransactionDTO.Amount)
+                        {
+                            oldAccount.Balance += transactionExists.Amount;
+                            accountExists.Balance -= updateTransactionDTO.Amount;
+                            transactionExists.Amount = updateTransactionDTO.Amount;
+                            _context.Accounts.Update(oldAccount);
+                            _context.Accounts.Update(accountExists);
+                        }
+                        else
+                        {
+                            return new ServiceResult<ResponseTransactionDTO>
+                            {
+                                Success = false,
+                                Message = "Insufficient balance for this debit transaction.",
+                                StatusCode = 400
+                            };
+                        }
+                    }
+                }
+
+            }
+        }
+
     }
 }

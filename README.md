@@ -97,7 +97,7 @@ npm run dev
 
 The frontend will be available at `http://localhost:5173`
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 FinanceTracker/
@@ -173,7 +173,7 @@ src/
 ### State Management
 Using React Context API for authentication state and user data across the application.
 
-## �️ Development Commands
+## Development Commands
 
 ### Backend (.NET)
 ```bash
@@ -190,7 +190,7 @@ npm run build      # Build for production
 npm run preview    # Preview production build locally
 ```
 
-## � API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/auth/signup` - Register new user

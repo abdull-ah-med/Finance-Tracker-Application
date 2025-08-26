@@ -5,7 +5,6 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { Accounts } from './pages/Accounts';
 import { Transactions } from './pages/Transactions';
-import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -22,11 +21,6 @@ function App() {
           <Route path="/transactions" element={
             <ProtectedRoute>
               <Transactions />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Settings />
             </ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/accounts" replace />} />

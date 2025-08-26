@@ -37,6 +37,7 @@ export interface Category {
 }
 
 export interface CreateTransaction {
+  id?: number;
   amount: number;
   transactionDateTime: string;
   accountId: number;

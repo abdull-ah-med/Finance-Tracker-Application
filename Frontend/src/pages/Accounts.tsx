@@ -87,15 +87,15 @@ export function Accounts() {
   const getAccountTypeIcon = (categoryName: string) => {
     switch (categoryName.toLowerCase()) {
       case "checking":
-        return "🏦";
+        return "Checking";
       case "savings":
-        return "💰";
+        return "Savings";
       case "credit":
-        return "💳";
+        return "Credit";
       case "investment":
-        return "📈";
+        return "Investment";
       default:
-        return "💼";
+        return categoryName;
     }
   };
 
@@ -131,7 +131,7 @@ export function Accounts() {
           <DialogTrigger asChild>
             <Button>Add Account</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] bg-black text-white">
             <DialogHeader>
               <DialogTitle>Create New Account</DialogTitle>
               <DialogDescription>
@@ -203,7 +203,7 @@ export function Accounts() {
 
       {accounts.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🏦</div>
+    <div className="text-6xl mb-4 font-bold text-primary">No Accounts</div>
           <h3 className="text-xl font-semibold mb-2">No accounts yet</h3>
           <p className="text-muted-foreground mb-6">
             Create your first account to start tracking your finances

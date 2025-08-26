@@ -18,7 +18,6 @@ export function Signup() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
     const success = await signup(name, email, password);
     if (!success) {
       setError('Failed to create account');
@@ -27,23 +26,20 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-base-100 p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 text-2xl">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary text-white rounded-2xl mb-4 text-3xl shadow-lg">
             💰
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-slate-400">Join Finance Tracker to manage your finances</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">Create Account</h1>
+          <p className="text-base-content/70">Join Finance Tracker to manage your finances</p>
         </div>
-        
-        {/* Signup Form */}
-        <div className="card">
+        <div className="card bg-base-200 shadow-xl border border-base-300">
           <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium mb-2 text-base-content/80">
                   Full Name
                 </label>
                 <input
@@ -51,14 +47,13 @@ export function Signup() {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="input-field"
+                  className="input input-bordered w-full"
                   placeholder="Enter your full name"
                   required
                 />
               </div>
-              
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium mb-2 text-base-content/80">
                   Email Address
                 </label>
                 <input
@@ -66,14 +61,13 @@ export function Signup() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
+                  className="input input-bordered w-full"
                   placeholder="Enter your email"
                   required
                 />
               </div>
-              
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium mb-2 text-base-content/80">
                   Password
                 </label>
                 <input
@@ -81,40 +75,33 @@ export function Signup() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
+                  className="input input-bordered w-full"
                   placeholder="Create a password"
                   required
                 />
               </div>
-              
               {error && (
-                <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
+                <div className="alert alert-error text-sm">
                   {error}
                 </div>
               )}
-              
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn-primary w-full relative"
+                className="btn btn-primary w-full"
               >
                 {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Creating account...</span>
-                  </div>
-                ) : (
-                  'Create Account'
-                )}
+                  <span className="loading loading-spinner loading-xs mr-2"></span>
+                ) : null}
+                Create Account
               </button>
             </form>
-            
-            <div className="mt-6 pt-6 border-t border-slate-700">
-              <p className="text-center text-slate-400 text-sm">
+            <div className="mt-6 pt-6 border-t border-base-300">
+              <p className="text-center text-base-content/70 text-sm">
                 Already have an account?{' '}
                 <Link 
                   to="/login" 
-                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
+                  className="text-primary font-medium hover:underline"
                 >
                   Sign in here
                 </Link>

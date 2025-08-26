@@ -9,16 +9,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const token = auth.getToken();
-        // Always try to verify user, even if only cookie is present
         api.get("/auth/me")
             .then((response) => {
                 if (response.success) {
                     setUser(response.user);
-                    // If token is not in localStorage but present in response, set it
-                    if (response.token && !token) {
-                        // No need to set token, cookie is used
-                    }
                 } else {
                     auth.removeToken();
                 }
@@ -58,12 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const logout = async () => {
-        await fetch("http://localhost:5046/api/auth/logout", {
-            method: "POST",
-            credentials: "include", // important so cookie is sent
-        });
-        auth.removeToken();
-        setUser(null);
+        const response = await api.post("/auth/logout");
+        if (response.success) {
+            auth.removeToken();
+            setUser(null);
+        }
     };
 
     return <AuthContext.Provider value={{ user, login, logout, signup, isLoading }}>{children}</AuthContext.Provider>;
