@@ -53,7 +53,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
     [HttpGet("me")]
     [Authorize]
-   public IActionResult VerifyUser()
+    public IActionResult VerifyUser()
     {
         if (User?.Identity?.IsAuthenticated == true)
         {
@@ -75,12 +75,19 @@ public class AuthController(IAuthService authService) : ControllerBase
         return BadRequest("User Not Authenticated");
     }
 
+    [Authorize]
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        Response.Cookies.Delete("auth_token");
+        Response.Cookies.Delete("auth_token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict
+        });
 
-        return Ok(new { Success = true, Message = "Logged out successfully" });
+        return Ok(new { Message = "Logout successful" });
     }
+
 
 }

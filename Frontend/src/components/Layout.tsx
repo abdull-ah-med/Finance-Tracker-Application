@@ -1,5 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu, Package2 } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,69 +21,93 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900">
-      {/* Navigation */}
-      <nav className="bg-slate-900/80 backdrop-blur-lg border-b border-slate-700/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link 
-                to="/accounts" 
-                className="flex items-center space-x-3 text-white font-bold text-xl hover:text-blue-400 transition-colors duration-200"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-sm">
-                  💰
-                </div>
-                <span>Finance Tracker</span>
-              </Link>
+    <div className="min-h-screen w-full bg-base-100 flex flex-col md:flex-row">
+      {/* Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-base-200/80 backdrop-blur border-r border-base-300 shadow-lg z-20">
+        <div className="flex items-center h-16 px-6 border-b border-base-300">
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-primary">
+            <Package2 className="h-7 w-7" />
+            <span>Finance Tracker</span>
+          </Link>
+        </div>
+        <nav className="flex-1 py-6 px-4 space-y-2">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all duration-150 hover:bg-primary/10 hover:text-primary ${
+                isActive(item.path) ? 'bg-primary/10 text-primary' : 'text-base-content/70'
+              }`}
+            >
+              <span className="text-xl">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-auto px-6 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
+              {user?.fullName?.[0]}
             </div>
-            
-            {/* Navigation Links */}
-            <div className="flex items-center space-x-1">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive(item.path)
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  <span className="text-base">{item.icon}</span>
-                  <span>{item.label}</span>
+            <span className="text-base font-medium text-base-content/80 truncate max-w-[120px]">{user?.fullName}</span>
+          </div>
+          <Button onClick={logout} size="sm" className="mt-4 w-full btn btn-error btn-outline">Logout</Button>
+        </div>
+      </aside>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Mobile header */}
+        <header className="md:hidden flex items-center h-16 px-4 bg-base-200/80 border-b border-base-300 shadow-sm z-10">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="mr-2">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col w-64 bg-base-200/90">
+              <nav className="flex flex-col gap-2 mt-6">
+                <Link to="/" className="flex items-center gap-3 font-bold text-xl text-primary mb-4">
+                  <Package2 className="h-7 w-7" />
+                  <span>Finance Tracker</span>
                 </Link>
-              ))}
-              
-              {/* User Menu */}
-              <div className="flex items-center space-x-4 ml-6 pl-6 border-l border-slate-700">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                    {user?.fullName?.charAt(0).toUpperCase()}
+                {navigationItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all duration-150 hover:bg-primary/10 hover:text-primary ${
+                      isActive(item.path) ? 'bg-primary/10 text-primary' : 'text-base-content/70'
+                    }`}
+                  >
+                    <span className="text-xl">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+              <div className="mt-auto px-2 pb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
+                    {user?.fullName?.[0]}
                   </div>
-                  <span className="text-slate-300 text-sm font-medium hidden sm:block">
-                    {user?.fullName}
-                  </span>
+                  <span className="text-base font-medium text-base-content/80 truncate max-w-[120px]">{user?.fullName}</span>
                 </div>
-                <button
-                  onClick={logout}
-                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900 text-sm"
-                >
-                  Logout
-                </button>
+                <Button onClick={logout} size="sm" className="mt-4 w-full btn btn-error btn-outline">Logout</Button>
               </div>
+            </SheetContent>
+          </Sheet>
+          <span className="ml-2 font-bold text-lg text-primary">Finance Tracker</span>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base">
+              {user?.fullName?.[0]}
             </div>
           </div>
-        </div>
-      </nav>
-      
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="animate-fadeIn">
+        </header>
+        {/* Main content */}
+        <main className="flex-1 flex flex-col gap-4 p-4 lg:gap-6 lg:p-8 bg-base-100">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import Cookies from 'js-cookie';
 
 export const auth = {
   // No-op: backend sets cookie, frontend does not need to set token
-  setToken(_token: string) {},
+  setToken() {},
 
   // Only read from cookie
   getToken(): string | undefined {
@@ -10,7 +10,7 @@ export const auth = {
   },
 
   removeToken() {
-    Cookies.remove('auth_token');
+    Cookies.remove('auth_token', { path: '/' });
   },
 
   isAuthenticated(): boolean {

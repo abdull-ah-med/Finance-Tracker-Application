@@ -197,7 +197,7 @@ export function Transactions() {
                             : 'border-slate-600 bg-slate-700 text-slate-300'
                         }`}
                       >
-                        Income
+                        Credit
                       </button>
                       <button
                         type="button"
@@ -208,7 +208,7 @@ export function Transactions() {
                             : 'border-slate-600 bg-slate-700 text-slate-300'
                         }`}
                       >
-                        Expense
+                        Debit
                       </button>
                     </div>
                   </div>

@@ -4,29 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+html {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  font-size: 16px;
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: #020617;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background: #0f172a;
+  min-height: 100vh;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
-  color: white;
+  background: linear-gradient(120deg, #0f172a 0%, #1e293b 100%);
+  color: #f1f5f9;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
+}
+
+/* Dashboard card shadow */
+.card {
+  box-shadow: 0 2px 8px 0 rgba(30,41,59,0.10), 0 1.5px 4px 0 rgba(16,185,129,0.04);
 }
 
 /* Custom scrollbar */
