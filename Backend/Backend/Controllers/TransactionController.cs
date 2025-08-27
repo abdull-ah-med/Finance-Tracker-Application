@@ -67,6 +67,43 @@ public class TransactionController(ITransactionService TS) : ControllerBase
             return StatusCode(500, ex);
         }
     }
+    [HttpPut("update")]
+    public async Task<IActionResult> UpdateTransactionAsync([FromBody] UpdateTransactionDTO updateTransactionDTO)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || userId <= 0)
+            {
+                return BadRequest("Request Unauthorized");
+            }
+            var updateTransactionResult = await TS.UpdateTransactionAsync(updateTransactionDTO, userId);
+            return StatusCode(updateTransactionResult.StatusCode, updateTransactionResult);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                Message = "An unexpected error occurred",
+                Details = ex.Message
+            });
+        }
+    }
+    [HttpDelete("delete")]
+    public async Task<IActionResult> DeleteTransactionAsync([FromBody] int transactionId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || userId <= 0)
+        {
+            return BadRequest("Request Unauthorized");
+        }
+        if (transactionId < 1)
+        {
+            return BadRequest("Invalid transaction ID");
+        }
 
+        var deleteTransactionResult = await TS.DeleteTransactionAsync(transactionId, userId);
+        return StatusCode(deleteTransactionResult.StatusCode, deleteTransactionResult);
+    }
 }
 

@@ -1,0 +1,121 @@
+.select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.select-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: between;
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  outline: none;
+}
+
+.select-trigger:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(79, 156, 255, 0.2);
+}
+
+.select-trigger:hover:not(:disabled) {
+  border-color: var(--color-border-light);
+}
+
+.select-trigger-open {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(79, 156, 255, 0.2);
+}
+
+.select-trigger-content {
+  flex: 1;
+  text-align: left;
+}
+
+.select-trigger-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+  color: var(--color-text-muted);
+}
+
+.select-trigger-icon-open {
+  transform: rotate(180deg);
+}
+
+.select-value-placeholder {
+  color: var(--color-text-muted);
+}
+
+.select-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  max-height: 200px;
+  overflow-y: auto;
+  animation: select-content-enter 0.1s ease-out;
+}
+
+.select-item {
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.select-item:hover:not(.select-item-disabled) {
+  background: var(--color-surface-2);
+}
+
+.select-item-selected {
+  background: var(--color-surface-3);
+  font-weight: var(--font-weight-medium);
+}
+
+.select-item-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.select-item:first-child {
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+}
+
+.select-item:last-child {
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+@keyframes select-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

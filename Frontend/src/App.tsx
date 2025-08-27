@@ -5,6 +5,9 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { Accounts } from './pages/Accounts';
 import { Transactions } from './pages/Transactions';
+import { Dashboard } from "./pages/Dashboard";
+import { Analytics } from "./pages/Analytics";
+import { Settings } from "./pages/Settings";
 
 function App() {
   return (
@@ -13,6 +16,11 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
           <Route path="/accounts" element={
             <ProtectedRoute>
               <Accounts />
@@ -23,7 +31,17 @@ function App() {
               <Transactions />
             </ProtectedRoute>
           } />
-          <Route path="/" element={<Navigate to="/accounts" replace />} />
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

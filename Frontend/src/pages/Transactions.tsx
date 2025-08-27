@@ -1,22 +1,9 @@
-import { useState, useEffect } from "react";
-import { Layout } from "@/components/Layout";
-import { api } from "@/utils/api";
-import { exportTransactionsToPDF } from "@/utils/pdfExport";
-import type { Transaction, Account, Category, CreateTransaction } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect, useCallback } from "react";
+import { Layout } from "../components/Layout";
+import { api } from "../utils/api";
+import { exportTransactionsToPDF } from "../utils/pdfExport";
+import type { Transaction, Account, CreateTransaction, Category } from "../types";
+import { Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui";
 import { 
     Plus, 
     Download, 
@@ -26,16 +13,16 @@ import {
     DollarSign,
     Edit,
     Trash2,
-    Receipt
+    Receipt,
+    Loader2
 } from "lucide-react";
 
 export function Transactions() {
-    const [updateDialogOpenId, setUpdateDialogOpenId] = useState<number | null>(null);
-    const [updateTransaction, setUpdateTransaction] = useState<CreateTransaction | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
     const [newTransaction, setNewTransaction] = useState<CreateTransaction>({
@@ -46,58 +33,11 @@ export function Transactions() {
         transactionType: "D",
         description: "",
     });
+    const [updateTransaction, setUpdateTransaction] = useState<CreateTransaction | null>(null);
+    const [updateDialogOpenId, setUpdateDialogOpenId] = useState<number | null>(null);
 
-    const openUpdateDialog = (transaction: Transaction) => {
-        setUpdateTransaction({
-            id: transaction.id,
-            amount: transaction.amount,
-            transactionDateTime: new Date(transaction.transactionDateTime).toISOString().slice(0, 16),
-            accountId: transaction.accountId,
-            transactionCategoryId: transaction.transactionCategoryId,
-            transactionType: transaction.transactionType,
-            description: transaction.description || "",
-        });
-        setUpdateDialogOpenId(transaction.id);
-    };
-
-    const closeUpdateDialog = () => {
-        setUpdateDialogOpenId(null);
-        setUpdateTransaction(null);
-    };
-
-    const handleUpdateTransaction = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!updateTransaction) return;
-
-        try {
-            const response = await api.put(`/user/transactions/update/${updateTransaction.id}`, updateTransaction);
-            if (response.success) {
-                await fetchData();
-                closeUpdateDialog();
-            }
-        } catch (error) {
-            console.error("Error updating transaction:", error);
-        }
-    };
-
-    const handleDeleteTransaction = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this transaction?")) return;
-
-        try {
-            const response = await api.delete(`/user/transactions/delete/${id}`);
-            if (response.success) {
-                await fetchData();
-            }
-        } catch (error) {
-            console.error("Error deleting transaction:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
         try {
             const [transactionsResponse, accountsResponse, categoriesResponse] = await Promise.all([
                 api.get("/user/transactions/fetch"),
@@ -117,18 +57,27 @@ export function Transactions() {
                 }
             }
 
-            if (categoriesResponse.success) {
-                setCategories(categoriesResponse.data || []);
+            if (categoriesResponse && categoriesResponse.success) {
+                setCategories(
+                    Array.isArray(categoriesResponse.data) ? categoriesResponse.data : []
+                );
             }
+
+
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [newTransaction.accountId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleCreateTransaction = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             const response = await api.post("/user/transactions/create", newTransaction);
             if (response.success) {
@@ -145,55 +94,75 @@ export function Transactions() {
             }
         } catch (error) {
             console.error("Error creating transaction:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    const handleExportPDF = async () => {
+    const handleUpdateTransaction = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!updateTransaction) return;
+        setIsSubmitting(true);
         try {
-            const accountName = selectedAccount 
-                ? accounts.find(a => a.id === selectedAccount)?.name
-                : undefined;
-            await exportTransactionsToPDF(filteredTransactions, accountName);
+            const response = await api.put(`/user/transactions/update/`, updateTransaction);
+            if (response.success) {
+                await fetchData();
+                closeUpdateDialog();
+            }
         } catch (error) {
-            console.error("Error exporting PDF:", error);
+            console.error("Error updating transaction:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    const filterTransactionsByAccount = (accountId: number | null) => {
-        if (accountId === null) return transactions;
-        return transactions.filter((t) => t.accountId === accountId);
+    const handleDeleteTransaction = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this transaction?")) return;
+
+        try {
+            const response = await api.delete('/user/transactions/delete/', id);
+            if (response.success) {
+                await fetchData();
+            }
+        } catch (error) {
+            console.error("Error deleting transaction:", error);
+        }
     };
 
-    const getAmountColor = (type: string) => {
-        return type === "C" ? "text-success-modern" : "text-error-modern";
+    const handleExportPDF = () => {
+        const accountName = selectedAccount ? accounts.find(a => a.id === selectedAccount)?.name : undefined;
+        exportTransactionsToPDF(filteredTransactions, accountName);
     };
 
-    const getTotalCredits = () => {
-        return filteredTransactions
-            .filter(t => t.transactionType === 'C')
-            .reduce((total, t) => total + t.amount, 0);
+    const openUpdateDialog = (transaction: Transaction) => {
+        setUpdateTransaction({
+            id: transaction.id,
+            amount: transaction.amount,
+            transactionDateTime: new Date(transaction.transactionDateTime).toISOString().slice(0, 16),
+            accountId: transaction.accountId,
+            transactionCategoryId: transaction.transactionCategoryId,
+            transactionType: transaction.transactionType,
+            description: transaction.description || "",
+        });
+        setUpdateDialogOpenId(transaction.id);
     };
 
-    const getTotalDebits = () => {
-        return filteredTransactions
-            .filter(t => t.transactionType === 'D')
-            .reduce((total, t) => total + t.amount, 0);
+    const closeUpdateDialog = () => {
+        setUpdateDialogOpenId(null);
+        setUpdateTransaction(null);
     };
 
-    const getNetAmount = () => {
-        return getTotalCredits() - getTotalDebits();
-    };
-
-    const filteredTransactions = filterTransactionsByAccount(selectedAccount);
+    const filteredTransactions = selectedAccount ? transactions.filter((t) => t.accountId === selectedAccount) : transactions;
+    
+    const getTotalCredits = () => filteredTransactions.filter(t => t.transactionType === 'C').reduce((total, t) => total + t.amount, 0);
+    const getTotalDebits = () => filteredTransactions.filter(t => t.transactionType === 'D').reduce((total, t) => total + t.amount, 0);
+    const getNetAmount = () => getTotalCredits() - getTotalDebits();
 
     if (isLoading) {
         return (
             <Layout>
-                <div className="flex items-center justify-center py-20">
-                    <div className="flex items-center space-x-4 text-white">
-                        <div className="loading-spinner"></div>
-                        <span className="text-lg font-medium">Loading transactions</span>
-                    </div>
+                <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
             </Layout>
         );
@@ -201,104 +170,94 @@ export function Transactions() {
 
     return (
         <Layout>
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-4xl font-bold text-white mb-2">Transactions</h1>
-                    <p className="text-muted-modern text-lg">
-                        Track your income and expenses
-                    </p>
+                    <h1 className="text-3xl font-bold">Transactions</h1>
+                    <p className="text-muted-foreground">Track your income and expenses.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                     {filteredTransactions.length > 0 && (
-                        <Button 
-                            onClick={handleExportPDF}
-                            className="btn-outline-modern flex items-center gap-2"
-                        >
-                            <Download className="h-4 w-4" />
+                        <Button variant="outline" onClick={handleExportPDF}>
+                            <Download className="mr-2 h-4 w-4" />
                             Export PDF
                         </Button>
                     )}
                     <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
                         <DialogTrigger asChild>
-                            <Button className="btn-modern flex items-center gap-2">
-                                <Plus className="h-4 w-4" />
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
                                 Add Transaction
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="dialog-modern sm:max-w-[500px] rounded-2xl">
+                        <DialogContent>
                             <DialogHeader>
-                                <DialogTitle className="text-2xl font-bold text-white">Create Transaction</DialogTitle>
-                                <DialogDescription className="text-muted-modern">
-                                    Add a new transaction to track your finances
-                                </DialogDescription>
+                                <DialogTitle>Create Transaction</DialogTitle>
+                                <DialogDescription>Add a new transaction to your account.</DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleCreateTransaction}>
-                                <div className="grid gap-6 py-6">
-                                    <div className="space-y-3">
-                                        <Label className="text-white font-medium">Transaction Type</Label>
-                                        <div className="flex gap-3">
-                                            <Button
-                                                type="button"
-                                                variant={newTransaction.transactionType === "C" ? "default" : "outline"}
-                                                className={newTransaction.transactionType === "C" ? "btn-modern flex-1" : "btn-outline-modern flex-1"}
-                                                onClick={() =>
-                                                    setNewTransaction((prev) => ({ ...prev, transactionType: "C" }))
-                                                }
-                                            >
-                                                <ArrowUpCircle className="h-4 w-4 mr-2" />
-                                                Income
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant={newTransaction.transactionType === "D" ? "default" : "outline"}
-                                                className={newTransaction.transactionType === "D" ? "btn-modern flex-1" : "btn-outline-modern flex-1"}
-                                                onClick={() =>
-                                                    setNewTransaction((prev) => ({ ...prev, transactionType: "D" }))
-                                                }
-                                            >
-                                                <ArrowDownCircle className="h-4 w-4 mr-2" />
-                                                Expense
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="amount" className="text-white font-medium">
-                                            Amount
-                                        </Label>
+                                <div className="grid gap-4 py-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="amount">Amount</Label>
                                         <Input
                                             id="amount"
                                             type="number"
                                             step="0.01"
                                             min="0"
-                                            value={newTransaction.amount}
+                                            value={newTransaction.amount || ""}
                                             onChange={(e) =>
-                                                setNewTransaction((prev) => ({
-                                                    ...prev,
-                                                    amount: parseFloat(e.target.value) || 0,
+                                                setNewTransaction((prev) => ({ 
+                                                    ...prev, 
+                                                    amount: parseFloat(e.target.value) || 0 
                                                 }))
                                             }
-                                            className="input-modern"
-                                            placeholder="Enter amount"
+                                            placeholder="0.00"
                                             required
+                                            disabled={isSubmitting}
                                         />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="account" className="text-white font-medium">
-                                            Account
-                                        </Label>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="transactionType">Transaction Type</Label>
+                                        <Select
+                                            value={newTransaction.transactionType}
+                                            onValueChange={(value: string) =>
+                                                setNewTransaction((prev) => ({
+                                                    ...prev,
+                                                    transactionType: value as 'C' | 'D',
+                                                }))
+                                            }
+                                            disabled={isSubmitting}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select transaction type">
+                                                    {newTransaction.transactionType === 'C' ? 'Credit (Income)' : 
+                                                     newTransaction.transactionType === 'D' ? 'Debit (Expense)' : 
+                                                     'Select transaction type'}
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="C">Credit (Income)</SelectItem>
+                                                <SelectItem value="D">Debit (Expense)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="account">Account</Label>
                                         <Select
                                             value={newTransaction.accountId.toString()}
-                                            onValueChange={(value) =>
-                                                setNewTransaction((prev) => ({ ...prev, accountId: parseInt(value) }))
+                                            onValueChange={(value: string) =>
+                                                setNewTransaction((prev) => ({
+                                                    ...prev,
+                                                    accountId: parseInt(value),
+                                                }))
                                             }
+                                            disabled={isSubmitting}
                                         >
-                                            <SelectTrigger className="input-modern">
-                                                <SelectValue placeholder="Select account" />
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select account">
+                                                    {accounts.find(a => a.id === newTransaction.accountId)?.name || "Select account"}
+                                                </SelectValue>
                                             </SelectTrigger>
-                                            <SelectContent className="dialog-modern">
+                                            <SelectContent>
                                                 {accounts.map((account) => (
                                                     <SelectItem key={account.id} value={account.id.toString()}>
                                                         {account.name}
@@ -307,24 +266,24 @@ export function Transactions() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="category" className="text-white font-medium">
-                                            Category
-                                        </Label>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="category">Category</Label>
                                         <Select
                                             value={newTransaction.transactionCategoryId.toString()}
-                                            onValueChange={(value) =>
+                                            onValueChange={(value: string) =>
                                                 setNewTransaction((prev) => ({
                                                     ...prev,
                                                     transactionCategoryId: parseInt(value),
                                                 }))
                                             }
+                                            disabled={isSubmitting}
                                         >
-                                            <SelectTrigger className="input-modern">
-                                                <SelectValue placeholder="Select category" />
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select category">
+                                                    {categories.find(c => c.id === newTransaction.transactionCategoryId)?.name || "Select category"}
+                                                </SelectValue>
                                             </SelectTrigger>
-                                            <SelectContent className="dialog-modern">
+                                            <SelectContent>
                                                 {categories.map((category) => (
                                                     <SelectItem key={category.id} value={category.id.toString()}>
                                                         {category.name}
@@ -333,43 +292,41 @@ export function Transactions() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="datetime" className="text-white font-medium">
-                                            Date & Time
-                                        </Label>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="date">Date & Time</Label>
                                         <Input
-                                            id="datetime"
+                                            id="date"
                                             type="datetime-local"
                                             value={newTransaction.transactionDateTime}
                                             onChange={(e) =>
-                                                setNewTransaction((prev) => ({
-                                                    ...prev,
-                                                    transactionDateTime: e.target.value,
+                                                setNewTransaction((prev) => ({ 
+                                                    ...prev, 
+                                                    transactionDateTime: e.target.value 
                                                 }))
                                             }
-                                            className="input-modern"
                                             required
+                                            disabled={isSubmitting}
                                         />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description" className="text-white font-medium">
-                                            Description
-                                        </Label>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="description">Description (Optional)</Label>
                                         <Input
                                             id="description"
-                                            value={newTransaction.description}
+                                            value={newTransaction.description || ""}
                                             onChange={(e) =>
-                                                setNewTransaction((prev) => ({ ...prev, description: e.target.value }))
+                                                setNewTransaction((prev) => ({ 
+                                                    ...prev, 
+                                                    description: e.target.value 
+                                                }))
                                             }
-                                            className="input-modern"
-                                            placeholder="Optional description"
+                                            placeholder="e.g., Grocery shopping, Salary, etc."
+                                            disabled={isSubmitting}
                                         />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="submit" className="btn-modern w-full">
+                                    <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Create Transaction
                                     </Button>
                                 </DialogFooter>
@@ -379,72 +336,53 @@ export function Transactions() {
                 </div>
             </div>
 
-            {/* Summary Cards */}
-            {filteredTransactions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="glass-card rounded-2xl p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-muted-modern text-sm font-medium uppercase tracking-wide">
-                                    Total Income
-                                </p>
-                                <p className="text-3xl font-bold mt-2 text-success-modern">
-                                    ${getTotalCredits().toFixed(2)}
-                                </p>
+            {transactions.length > 0 ? (
+                <>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+                                <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-green-500">${getTotalCredits().toFixed(2)}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                                <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-red-500">${getTotalDebits().toFixed(2)}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Net Amount</CardTitle>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className={`text-2xl font-bold ${getNetAmount() >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    ${getNetAmount().toFixed(2)}
                             </div>
-                                          <div className="p-3 rounded-xl bg-gray-800 bg-opacity-60 border border-gray-700">
-                <ArrowUpCircle className="h-6 w-6 text-success-modern" />
-              </div>
-                        </div>
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    <div className="glass-card rounded-2xl p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-muted-modern text-sm font-medium uppercase tracking-wide">
-                                    Total Expenses
-                                </p>
-                                <p className="text-3xl font-bold mt-2 text-error-modern">
-                                    ${getTotalDebits().toFixed(2)}
-                                </p>
-                            </div>
-                                          <div className="p-3 rounded-xl bg-gray-800 bg-opacity-60 border border-gray-700">
-                <ArrowDownCircle className="h-6 w-6 text-error-modern" />
-              </div>
-                        </div>
-                    </div>
-
-                    <div className="glass-card rounded-2xl p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-muted-modern text-sm font-medium uppercase tracking-wide">
-                                    Net Amount
-                                </p>
-                                <p className={`text-3xl font-bold mt-2 ${getNetAmount() >= 0 ? 'text-success-modern' : 'text-error-modern'}`}>
-                                    {getNetAmount() >= 0 ? '+' : ''}${getNetAmount().toFixed(2)}
-                                </p>
-                            </div>
-                                          <div className="p-3 rounded-xl bg-gradient-to-r from-gray-800 to-black border border-gray-700">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Filter Section */}
-            <div className="glass-card rounded-2xl p-6">
+                    <Card>
+                        <CardHeader>
                 <div className="flex items-center gap-4">
-                    <Filter className="h-5 w-5 text-muted-modern" />
-                    <Label className="text-white font-medium">Filter by account:</Label>
+                                <Filter className="h-5 w-5 text-muted-foreground" />
+                                <Label>Filter by account:</Label>
                     <Select
                         value={selectedAccount?.toString() || "all"}
                         onValueChange={(value) => setSelectedAccount(value === "all" ? null : parseInt(value))}
                     >
-                        <SelectTrigger className="input-modern w-64">
+                                    <SelectTrigger className="w-64">
                             <SelectValue placeholder="Select account" />
                         </SelectTrigger>
-                        <SelectContent className="dialog-modern">
+                                    <SelectContent>
                             <SelectItem value="all">All Accounts</SelectItem>
                             {accounts.map((account) => (
                                 <SelectItem key={account.id} value={account.id.toString()}>
@@ -454,62 +392,30 @@ export function Transactions() {
                         </SelectContent>
                     </Select>
                 </div>
-            </div>
-
-            {/* Transactions Table */}
-            {filteredTransactions.length === 0 ? (
-                <div className="text-center py-20">
-                    <div className="glass-card rounded-2xl p-12 max-w-md mx-auto">
-                                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-gray-800 to-black flex items-center justify-center mx-auto mb-6 border border-gray-700">
-              <Receipt className="h-10 w-10 text-white" />
-            </div>
-                        <h3 className="text-2xl font-bold text-white mb-3">No transactions yet</h3>
-                        <p className="text-muted-modern mb-8 text-lg">
-                            {selectedAccount
-                                ? "No transactions for this account"
-                                : "Start tracking your income and expenses"}
-                        </p>
-                        <Button 
-                            onClick={() => setShowCreateForm(true)}
-                            className="btn-modern"
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Transaction
-                        </Button>
-                    </div>
-                </div>
-            ) : (
-                <div className="glass-card rounded-2xl overflow-hidden">
-                    <Table className="table-modern">
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="text-white font-semibold">Description</TableHead>
-                                <TableHead className="text-white font-semibold">Category</TableHead>
-                                <TableHead className="text-white font-semibold">Account</TableHead>
-                                <TableHead className="text-white font-semibold">Date & Time</TableHead>
-                                <TableHead className="text-right text-white font-semibold">Amount</TableHead>
-                                <TableHead className="text-center text-white font-semibold">Actions</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Account</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead className="text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredTransactions.map((transaction) => (
-                                <TableRow key={transaction.id} className="hover:bg-white hover:bg-opacity-5 transition-colors">
-                                    <TableCell className="font-medium text-white">
-                                        {transaction.description || transaction.transactionCategoryName}
-                                    </TableCell>
-                                    <TableCell className="text-muted-modern">
-                                        {transaction.transactionCategoryName}
-                                    </TableCell>
-                                    <TableCell className="text-muted-modern">
-                                        {transaction.accountName}
-                                    </TableCell>
-                                    <TableCell className="text-muted-modern">
-                                        {new Date(transaction.transactionDateTime).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className={`text-right font-bold ${getAmountColor(transaction.transactionType)}`}>
+                                        <TableRow key={transaction.id}>
+                                            <TableCell className="font-medium">{transaction.description || transaction.transactionCategoryName}</TableCell>
+                                            <TableCell>{transaction.transactionCategoryName}</TableCell>
+                                            <TableCell>{transaction.accountName}</TableCell>
+                                            <TableCell>{new Date(transaction.transactionDateTime).toLocaleDateString()}</TableCell>
+                                            <TableCell className={`text-right font-bold ${transaction.transactionType === 'C' ? 'text-green-500' : 'text-red-500'}`}>
                                         {transaction.transactionType === "C" ? "+" : "-"}${transaction.amount.toFixed(2)}
                                     </TableCell>
-                                    <TableCell>
+                                            <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <Dialog
                                                 open={updateDialogOpenId === transaction.id}
@@ -518,87 +424,79 @@ export function Transactions() {
                                                 }
                                             >
                                                 <DialogTrigger asChild>
-                                                    <Button 
-                                                        size="sm" 
-                                                        className="btn-outline-modern p-2"
-                                                    >
+                                                            <Button variant="ghost" size="icon">
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
                                                 </DialogTrigger>
-                                                <DialogContent className="dialog-modern sm:max-w-[500px] rounded-2xl">
+                                                        <DialogContent>
                                                     <DialogHeader>
-                                                        <DialogTitle className="text-2xl font-bold text-white">
-                                                            Update Transaction
-                                                        </DialogTitle>
-                                                        <DialogDescription className="text-muted-modern">
-                                                            Edit the transaction details below
-                                                        </DialogDescription>
+                                                                <DialogTitle>Update Transaction</DialogTitle>
                                                     </DialogHeader>
                                                     {updateTransaction && (
                                                         <form onSubmit={handleUpdateTransaction}>
-                                                            <div className="grid gap-6 py-6">
-                                                                <div className="space-y-3">
-                                                                    <Label className="text-white font-medium">Transaction Type</Label>
-                                                                    <div className="flex gap-3">
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant={updateTransaction.transactionType === "C" ? "default" : "outline"}
-                                                                            className={updateTransaction.transactionType === "C" ? "btn-modern flex-1" : "btn-outline-modern flex-1"}
-                                                                            onClick={() =>
-                                                                                setUpdateTransaction((prev) =>
-                                                                                    prev ? { ...prev, transactionType: "C" } : null
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <ArrowUpCircle className="h-4 w-4 mr-2" />
-                                                                            Income
-                                                                        </Button>
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant={updateTransaction.transactionType === "D" ? "default" : "outline"}
-                                                                            className={updateTransaction.transactionType === "D" ? "btn-modern flex-1" : "btn-outline-modern flex-1"}
-                                                                            onClick={() =>
-                                                                                setUpdateTransaction((prev) =>
-                                                                                    prev ? { ...prev, transactionType: "D" } : null
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <ArrowDownCircle className="h-4 w-4 mr-2" />
-                                                                            Expense
-                                                                        </Button>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-white font-medium">Amount</Label>
+                                                            <div className="grid gap-4 py-4">
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="update-amount">Amount</Label>
                                                                     <Input
+                                                                        id="update-amount"
                                                                         type="number"
                                                                         step="0.01"
                                                                         min="0"
-                                                                        value={updateTransaction.amount}
+                                                                        value={updateTransaction.amount || ""}
                                                                         onChange={(e) =>
-                                                                            setUpdateTransaction((prev) =>
-                                                                                prev ? { ...prev, amount: parseFloat(e.target.value) || 0 } : null
-                                                                            )
+                                                                            setUpdateTransaction((prev) => prev ? ({ 
+                                                                                ...prev, 
+                                                                                amount: parseFloat(e.target.value) || 0 
+                                                                            }) : null)
                                                                         }
-                                                                        className="input-modern"
+                                                                        placeholder="0.00"
+                                                                        required
+                                                                        disabled={isSubmitting}
                                                                     />
                                                                 </div>
-
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-white font-medium">Account</Label>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="update-transactionType">Transaction Type</Label>
+                                                                    <Select
+                                                                        value={updateTransaction.transactionType}
+                                                                        onValueChange={(value: string) =>
+                                                                            setUpdateTransaction((prev) => prev ? ({
+                                                                                ...prev,
+                                                                                transactionType: value as 'C' | 'D',
+                                                                            }) : null)
+                                                                        }
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select transaction type">
+                                                                                {updateTransaction.transactionType === 'C' ? 'Credit (Income)' : 
+                                                                                 updateTransaction.transactionType === 'D' ? 'Debit (Expense)' : 
+                                                                                 'Select transaction type'}
+                                                                            </SelectValue>
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="C">Credit (Income)</SelectItem>
+                                                                            <SelectItem value="D">Debit (Expense)</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="update-account">Account</Label>
                                                                     <Select
                                                                         value={updateTransaction.accountId.toString()}
-                                                                        onValueChange={(val) =>
-                                                                            setUpdateTransaction((prev) =>
-                                                                                prev ? { ...prev, accountId: parseInt(val) } : null
-                                                                            )
+                                                                        onValueChange={(value: string) =>
+                                                                            setUpdateTransaction((prev) => prev ? ({
+                                                                                ...prev,
+                                                                                accountId: parseInt(value),
+                                                                            }) : null)
                                                                         }
+                                                                        disabled={isSubmitting}
                                                                     >
-                                                                        <SelectTrigger className="input-modern">
-                                                                            <SelectValue placeholder="Select account" />
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select account">
+                                                                                {accounts.find(a => a.id === updateTransaction.accountId)?.name || "Select account"}
+                                                                            </SelectValue>
                                                                         </SelectTrigger>
-                                                                        <SelectContent className="dialog-modern">
+                                                                        <SelectContent>
                                                                             {accounts.map((account) => (
                                                                                 <SelectItem key={account.id} value={account.id.toString()}>
                                                                                     {account.name}
@@ -607,21 +505,24 @@ export function Transactions() {
                                                                         </SelectContent>
                                                                     </Select>
                                                                 </div>
-
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-white font-medium">Category</Label>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="update-category">Category</Label>
                                                                     <Select
                                                                         value={updateTransaction.transactionCategoryId.toString()}
-                                                                        onValueChange={(val) =>
-                                                                            setUpdateTransaction((prev) =>
-                                                                                prev ? { ...prev, transactionCategoryId: parseInt(val) } : null
-                                                                            )
+                                                                        onValueChange={(value: string) =>
+                                                                            setUpdateTransaction((prev) => prev ? ({
+                                                                                ...prev,
+                                                                                transactionCategoryId: parseInt(value),
+                                                                            }) : null)
                                                                         }
+                                                                        disabled={isSubmitting}
                                                                     >
-                                                                        <SelectTrigger className="input-modern">
-                                                                            <SelectValue placeholder="Select category" />
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select category">
+                                                                                {categories.find(c => c.id === updateTransaction.transactionCategoryId)?.name || "Select category"}
+                                                                            </SelectValue>
                                                                         </SelectTrigger>
-                                                                        <SelectContent className="dialog-modern">
+                                                                        <SelectContent>
                                                                             {categories.map((category) => (
                                                                                 <SelectItem key={category.id} value={category.id.toString()}>
                                                                                     {category.name}
@@ -630,57 +531,50 @@ export function Transactions() {
                                                                         </SelectContent>
                                                                     </Select>
                                                                 </div>
-
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-white font-medium">Date & Time</Label>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="update-date">Date & Time</Label>
                                                                     <Input
+                                                                        id="update-date"
                                                                         type="datetime-local"
                                                                         value={updateTransaction.transactionDateTime}
                                                                         onChange={(e) =>
-                                                                            setUpdateTransaction((prev) =>
-                                                                                prev ? { ...prev, transactionDateTime: e.target.value } : null
-                                                                            )
+                                                                            setUpdateTransaction((prev) => prev ? ({ 
+                                                                                ...prev, 
+                                                                                transactionDateTime: e.target.value 
+                                                                            }) : null)
                                                                         }
-                                                                        className="input-modern"
+                                                                        required
+                                                                        disabled={isSubmitting}
                                                                     />
                                                                 </div>
-
-                                                                <div className="space-y-2">
-                                                                    <Label className="text-white font-medium">Description</Label>
+                                                                <div className="grid gap-2">
+                                                                    <Label htmlFor="update-description">Description (Optional)</Label>
                                                                     <Input
-                                                                        value={updateTransaction.description}
+                                                                        id="update-description"
+                                                                        value={updateTransaction.description || ""}
                                                                         onChange={(e) =>
-                                                                            setUpdateTransaction((prev) =>
-                                                                                prev ? { ...prev, description: e.target.value } : null
-                                                                            )
+                                                                            setUpdateTransaction((prev) => prev ? ({ 
+                                                                                ...prev, 
+                                                                                description: e.target.value 
+                                                                            }) : null)
                                                                         }
-                                                                        className="input-modern"
-                                                                        placeholder="Optional description"
+                                                                        placeholder="e.g., Grocery shopping, Salary, etc."
+                                                                        disabled={isSubmitting}
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            <DialogFooter className="gap-3">
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={closeUpdateDialog}
-                                                                    className="btn-outline-modern"
-                                                                >
-                                                                    Cancel
-                                                                </Button>
-                                                                <Button type="submit" className="btn-modern">
-                                                                    Update Transaction
+                                                                    <DialogFooter>
+                                                                        <Button type="button" variant="outline" onClick={closeUpdateDialog}>Cancel</Button>
+                                                                        <Button type="submit" disabled={isSubmitting}>
+                                                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                                            Update
                                                                 </Button>
                                                             </DialogFooter>
                                                         </form>
                                                     )}
                                                 </DialogContent>
                                             </Dialog>
-
-                                            <Button 
-                                                size="sm" 
-                                                onClick={() => handleDeleteTransaction(transaction.id)}
-                                                className="btn-outline-modern p-2 hover:bg-red-500 hover:bg-opacity-20"
-                                            >
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteTransaction(transaction.id)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -689,6 +583,24 @@ export function Transactions() {
                             ))}
                         </TableBody>
                     </Table>
+                        </CardContent>
+                    </Card>
+                </>
+            ) : (
+                <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+                    <div className="flex flex-col items-center gap-1 text-center">
+                        <Receipt className="h-10 w-10 text-muted-foreground" />
+                        <h3 className="text-2xl font-bold tracking-tight">
+                            You have no transactions
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            You can start managing your finances as soon as you add a transaction.
+                        </p>
+                        <Button className="mt-4" onClick={() => setShowCreateForm(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Transaction
+                        </Button>
+                    </div>
                 </div>
             )}
         </Layout>

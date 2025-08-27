@@ -1,0 +1,18 @@
+.label {
+  display: inline-block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+  line-height: var(--line-height-normal);
+}
+
+.label.required::after {
+  content: " *";
+  color: var(--color-error);
+}
+
+.label.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

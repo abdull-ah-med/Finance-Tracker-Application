@@ -1,8 +1,6 @@
-// @ts-ignore
 import jsPDF from 'jspdf';
-// @ts-ignore
 import html2canvas from 'html2canvas';
-import type { Account, Transaction } from '@/types';
+import type { Account, Transaction } from '../types';
 
 export const exportAccountsToPDF = async (accounts: Account[]) => {
   const pdf = new jsPDF();

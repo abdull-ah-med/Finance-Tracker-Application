@@ -42,13 +42,14 @@ export const api = {
     return response.json();
   },
 
-  async delete(endpoint: string) {
+  async delete(endpoint: string, data: unknown) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

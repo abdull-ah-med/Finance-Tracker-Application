@@ -6,72 +6,83 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<AppDbContext>(options =>options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Database
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Validation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
+
+// Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
-    };
-    
-    // Configure to read JWT token from both Authorization header and cookies
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            // Check if token is in Authorization header first
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-            
-            // If not in header, check cookies
-            if (string.IsNullOrEmpty(token))
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+        };
+
+        // Accept token from Authorization header OR cookies
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                token = context.Request.Cookies["auth_token"];
+                var token = context.Request.Headers["Authorization"]
+                    .FirstOrDefault()?.Split(" ").Last();
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    token = context.Request.Cookies["auth_token"];
+                }
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
             }
-            
-            if (!string.IsNullOrEmpty(token))
-            {
-                context.Token = token;
-            }
-            
-            return Task.CompletedTask;
-        }
-    };
-});
+        };
+    });
+
+// CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins", builder =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-    
-    options.AddPolicy("AllowCredentials", builder =>
-    {
-        builder.WithOrigins("http://localhost:5173", "http://localhost:3000") // Frontend URLs
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials(); // Allow cookies
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
+app.UseRouting();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseCors("AllowCredentials"); // Use the policy that allows credentials
+
 app.MapControllers();
+
 app.Run();

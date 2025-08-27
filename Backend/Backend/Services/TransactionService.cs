@@ -3,6 +3,7 @@ using Backend.Models;
 using Backend.DTO;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation.Validators;
 
 namespace Backend.Services;
 
@@ -258,105 +259,208 @@ public class TransactionService : ITransactionService
             }
         };
     }
-    public async Task<ServiceResult<ResponseTransactionDTO>> UpdateTransaction(UpdateTransactionDTO updateTransactionDTO)
+    public async Task<ServiceResult<ResponseTransactionDTO>> UpdateTransactionAsync(UpdateTransactionDTO updateTransactionDTO, int userId)
     {
-        var transactionExists = await _context.Transactions.Include(t => t.TransactionCategory).FirstOrDefaultAsync(t => t.Id == updateTransactionDTO.Id);
-        if (transactionExists == null)
+        var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == updateTransactionDTO.Id);
+        var user = await _context.Accounts.Include(a => a.User).FirstOrDefaultAsync(a => a.UserId == userId && updateTransactionDTO.AccountId == a.Id);
+        if (transaction == null || user == null)
         {
             return new ServiceResult<ResponseTransactionDTO>
             {
                 Success = false,
-                Message = "Invalid Transaction Id",
+                Message = "User or Transaction Not Found",
                 StatusCode = 404
             };
         }
 
-        var accountExists = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == updateTransactionDTO.AccountId);
-        if (accountExists == null)
+        var oldTransactionAccount = await _context.Accounts.FindAsync(transaction.AccountId); // Old transaction Account
+        var newTransactionAccount = await _context.Accounts.FindAsync(updateTransactionDTO.AccountId); // New transaction Account
+        // if(oldTransactionAccount.UserId != user.Id || (newTransactionAccount != null && newTransactionAccount.UserId != user.Id))
+        // {
+        //     return new ServiceResult<ResponseTransactionDTO>
+        //     {
+        //         Success = false,
+        //         Message = "Unauthorized to update this transaction",
+        //         StatusCode = 403,
+        //         // Data = oldTransactionAccount
+        //     };
+        // }
+        // Revert the old transaction
+        if (oldTransactionAccount != null)
+        {
+            if (transaction.TransactionType == 'C')
+            {
+                if (oldTransactionAccount.Balance >= transaction.Amount)
+                {
+                    oldTransactionAccount.Balance -= transaction.Amount;
+                }
+                else
+                {
+                    return new ServiceResult<ResponseTransactionDTO>
+                    {
+                        Success = false,
+                        Message = "Insufficient balance for this credit transaction.",
+                        StatusCode = 400
+                    };
+                }
+            }
+            else if (transaction.TransactionType == 'D')
+            {
+                oldTransactionAccount.Balance += transaction.Amount;
+            }
+            else
+            {
+                return new ServiceResult<ResponseTransactionDTO>
+                {
+                    Success = false,
+                    Message = "Invalid transaction type in existing transaction",
+                    StatusCode = 400
+                };
+            }
+        }
+        else
         {
             return new ServiceResult<ResponseTransactionDTO>
             {
                 Success = false,
-                Message = "Account not found",
+                Message = "Old transaction account not found",
                 StatusCode = 404
             };
         }
 
 
-        if (transactionExists.AccountId != updateTransactionDTO.AccountId)
+        // Update the transaction
+        if (newTransactionAccount == null)
         {
+            return new ServiceResult<ResponseTransactionDTO>
             {
-                var oldAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == transactionExists.AccountId);
-                if (transactionExists.TransactionType != updateTransactionDTO.TransactionType)
+                Success = false,
+                Message = "New transaction account not found",
+                StatusCode = 404
+            };
+        }
+        if (updateTransactionDTO.TransactionType != 'C' && updateTransactionDTO.TransactionType != 'D')
+        {
+            return new ServiceResult<ResponseTransactionDTO>
+            {
+                Success = false,
+                Message = "Invalid transaction type in updated transaction",
+                StatusCode = 400
+            };
+        }
+        if (updateTransactionDTO.TransactionType == 'C')
+        {
+            newTransactionAccount.Balance += updateTransactionDTO.Amount;
+        }
+        else if (updateTransactionDTO.TransactionType == 'D')
+        {
+
+            if (newTransactionAccount.Balance >= updateTransactionDTO.Amount)
+            {
+                newTransactionAccount.Balance -= updateTransactionDTO.Amount;
+            }
+            else
+            {
+                return new ServiceResult<ResponseTransactionDTO>
                 {
-
-                    if (transactionExists.TransactionType == 'C' && updateTransactionDTO.TransactionType == 'D')
-                    {
-                        if (oldAccount.Balance >= transactionExists.Amount && accountExists.Balance >= updateTransactionDTO.Amount)
-                        {
-                            oldAccount.Balance -= transactionExists.Amount;
-                            accountExists.Balance -= updateTransactionDTO.Amount;
-                            transactionExists.Amount = updateTransactionDTO.Amount;
-                            transactionExists.TransactionType = updateTransactionDTO.TransactionType;
-                            _context.Accounts.Update(oldAccount);
-                            _context.Accounts.Update(accountExists);
-                        }
-                        else
-                        {
-                            return new ServiceResult<ResponseTransactionDTO>
-                            {
-                                Success = false,
-                                Message = "Insufficient balance for this debit transaction.",
-                                StatusCode = 400
-                            };
-                        }
-                    }
-                    else if (transactionExists.TransactionType == 'D' && updateTransactionDTO.TransactionType == 'C')
-                    {
-
-                        oldAccount.Balance += transactionExists.Amount;
-                        accountExists.Balance += updateTransactionDTO.Amount;
-                        transactionExists.Amount = updateTransactionDTO.Amount;
-                        transactionExists.TransactionType = updateTransactionDTO.TransactionType;
-                        _context.Accounts.Update(oldAccount);
-                        _context.Accounts.Update(accountExists);
-                    }
-
-                }
-                else if (transactionExists.TransactionType == updateTransactionDTO.TransactionType)
-                {
-                    if (transactionExists.TransactionType == 'C')
-                    {
-                        oldAccount.Balance -= transactionExists.Amount;
-                        accountExists.Balance += updateTransactionDTO.Amount;
-                        transactionExists.Amount = updateTransactionDTO.Amount;
-                        _context.Accounts.Update(oldAccount);
-                        _context.Accounts.Update(accountExists);
-                    }
-                    else if (transactionExists.TransactionType == 'D')
-                    {
-                        if (accountExists.Balance + transactionExists.Amount >= updateTransactionDTO.Amount)
-                        {
-                            oldAccount.Balance += transactionExists.Amount;
-                            accountExists.Balance -= updateTransactionDTO.Amount;
-                            transactionExists.Amount = updateTransactionDTO.Amount;
-                            _context.Accounts.Update(oldAccount);
-                            _context.Accounts.Update(accountExists);
-                        }
-                        else
-                        {
-                            return new ServiceResult<ResponseTransactionDTO>
-                            {
-                                Success = false,
-                                Message = "Insufficient balance for this debit transaction.",
-                                StatusCode = 400
-                            };
-                        }
-                    }
-                }
-
+                    Success = false,
+                    Message = "Insufficient balance for this debit transaction.",
+                    StatusCode = 400
+                };
             }
         }
 
+        transaction.Amount = updateTransactionDTO.Amount;
+        transaction.TransactionDateTime = updateTransactionDTO.TransactionDateTime;
+        transaction.Description = updateTransactionDTO.Description ?? string.Empty;
+        transaction.AccountId = updateTransactionDTO.AccountId;
+        transaction.TransactionCategoryId = updateTransactionDTO.TransactionCategoryId;
+        transaction.TransactionType = updateTransactionDTO.TransactionType;
+        await _context.SaveChangesAsync();
+
+        return new ServiceResult<ResponseTransactionDTO>
+        {
+            Success = true,
+            Message = "Transaction updated successfully.",
+            StatusCode = 200,
+            Data = new ResponseTransactionDTO
+            {
+                Id = transaction.Id,
+                Amount = transaction.Amount,
+                TransactionDateTime = transaction.TransactionDateTime,
+                Description = transaction.Description,
+                AccountId = transaction.AccountId,
+                TransactionCategoryId = transaction.TransactionCategoryId,
+                TransactionType = transaction.TransactionType
+            }
+        };
+    }
+
+
+    public async Task<ServiceResult<string>> DeleteTransactionAsync(int transactionID, int userId)
+    {
+        var transaction = await _context.Transactions.FindAsync(transactionID);
+        var user = await _context.Accounts.Include(a => a.User).FirstOrDefaultAsync(a => a.UserId == userId && transaction != null && transaction.AccountId == a.Id);
+        if (transaction == null || user == null)
+        {
+            return new ServiceResult<string>
+            {
+                Success = false,
+                Message = "User or Transaction Not Found",
+                StatusCode = 404
+            };
+        }
+        var transactionAccount = await _context.Accounts.FindAsync(transaction.AccountId);
+        if (transactionAccount == null)
+        {
+            return new ServiceResult<string>
+            {
+                Success = false,
+                Message = "Transaction account not found",
+                StatusCode = 404
+            };
+        }
+        // Revert Transaction Changes
+        if (transaction.TransactionType == 'C')
+        {
+            if (transactionAccount.Balance >= transaction.Amount)
+            {
+                transactionAccount.Balance -= transaction.Amount;
+            }
+            else
+            {
+                return new ServiceResult<string>
+                {
+                    Success = false,
+                    Message = "Insufficient balance to delete this credit transaction.",
+                    StatusCode = 400
+                };
+            }
+        }
+        else if (transaction.TransactionType == 'D')
+        {
+            transactionAccount.Balance += transaction.Amount;
+        }
+        else
+        {
+            return new ServiceResult<string>
+            {
+                Success = false,
+                Message = "Invalid transaction type in existing transaction",
+                StatusCode = 400
+            };
+        }
+
+        _context.Transactions.Remove(transaction);
+        await _context.SaveChangesAsync();
+
+        return new ServiceResult<string>
+        {
+            Success = true,
+            Message = "Transaction deleted successfully.",
+            StatusCode = 200,
+            Data = transactionID.ToString()
+        };
     }
 }
+

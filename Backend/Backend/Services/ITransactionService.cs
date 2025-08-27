@@ -9,5 +9,6 @@ public interface ITransactionService
     Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID);
     Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID, int accountID);
     Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID, int accountID, int TransactionCategoryId);
-
+    Task<ServiceResult<ResponseTransactionDTO>> UpdateTransactionAsync(UpdateTransactionDTO updateTransactionDTO, int userId);
+    Task<ServiceResult<string>> DeleteTransactionAsync(int transactionID, int userId);
 }
