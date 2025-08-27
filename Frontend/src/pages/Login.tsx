@@ -21,7 +21,7 @@ export function Login() {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/accounts" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { api } from "../utils/api";
 import { exportAccountsToPDF } from "../utils/pdfExport";
+import { useAuth } from "../hooks/useAuth";
 import type { Account, Category, CreateAccount } from "../types";
 import { Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui";
 import { Plus, Download, TrendingUp, TrendingDown, DollarSign, CreditCard, Wallet, PiggyBank, Building, Loader2 } from "lucide-react";
 
 export function Accounts() {
+    const { user } = useAuth();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +65,7 @@ export function Accounts() {
     };
 
     const handleExportPDF = () => {
-        exportAccountsToPDF(accounts);
+        exportAccountsToPDF(accounts, user || undefined);
     };
 
     const getTotalBalance = () => accounts.reduce((total, account) => total + account.balance, 0);

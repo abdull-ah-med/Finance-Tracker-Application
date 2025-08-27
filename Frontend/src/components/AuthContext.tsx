@@ -52,11 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const logout = async () => {
-        const response = await api.post("/auth/logout");
-        if (response.success) {
-            auth.removeToken();
-            setUser(null);
-        }
+        await api.post("/auth/logout");
+        auth.removeToken();
+        setUser(null);
     };
 
     return <AuthContext.Provider value={{ user, login, logout, signup, isLoading }}>{children}</AuthContext.Provider>;

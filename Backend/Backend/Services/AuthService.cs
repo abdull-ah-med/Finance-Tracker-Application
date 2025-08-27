@@ -122,4 +122,67 @@ public class AuthService : IAuthService
     {
         return _dbContext.Users.AnyAsync(u => u.Email == email);
     }
+
+    public async Task<ServiceResult<UserResponseDTO>> UpdateUserAsync(UserUpdateDTO userUpdateDTO, int userId)
+    {
+        try
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return new ServiceResult<UserResponseDTO>
+                {
+                    Success = false,
+                    Message = "User not found",
+                    StatusCode = 404
+                };
+            }
+
+            // Check if email is already taken by another user
+            if (!string.IsNullOrEmpty(userUpdateDTO.Email) && userUpdateDTO.Email.ToLower() != user.Email.ToLower())
+            {
+                var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == userUpdateDTO.Email.ToLower() && u.Id != userId);
+                if (existingUser != null)
+                {
+                    return new ServiceResult<UserResponseDTO>
+                    {
+                        Success = false,
+                        Message = "Email is already taken by another user",
+                        StatusCode = 409
+                    };
+                }
+            }
+
+            // Update only the name (email should not be updated as per requirements)
+            if (!string.IsNullOrEmpty(userUpdateDTO.FullName))
+            {
+                user.FullName = userUpdateDTO.FullName;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            var userResponseDTO = new UserResponseDTO
+            {
+                FullName = user.FullName,
+                Email = user.Email
+            };
+
+            return new ServiceResult<UserResponseDTO>
+            {
+                Success = true,
+                Message = "User updated successfully",
+                StatusCode = 200,
+                Data = userResponseDTO
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceResult<UserResponseDTO>
+            {
+                Success = false,
+                Message = "An error occurred while updating the user",
+                StatusCode = 500
+            };
+        }
+    }
 }

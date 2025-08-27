@@ -1,21 +1,29 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import type { Account, Transaction } from '../types';
+import type { Account, Transaction, User } from '../types';
 
-export const exportAccountsToPDF = async (accounts: Account[]) => {
+export const exportAccountsToPDF = async (accounts: Account[], user?: User) => {
   const pdf = new jsPDF();
   
   // Title
   pdf.setFontSize(20);
   pdf.text('Accounts Report', 20, 30);
   
+  // User Information
+  if (user) {
+    pdf.setFontSize(12);
+    pdf.text(`User: ${user.fullName}`, 20, 42);
+    pdf.setFontSize(10);
+    pdf.text(`Email: ${user.email}`, 20, 50);
+  }
+  
   // Date
   pdf.setFontSize(10);
-  pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 40);
+  pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, user ? 58 : 40);
   
   // Table headers
   pdf.setFontSize(12);
-  let y = 60;
+  let y = user ? 78 : 60;
   pdf.text('Account Name', 20, y);
   pdf.text('Type', 80, y);
   pdf.text('Balance', 140, y);
@@ -61,26 +69,40 @@ export const exportAccountsToPDF = async (accounts: Account[]) => {
   pdf.save(`accounts-report-${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
-export const exportTransactionsToPDF = async (transactions: Transaction[], accountFilter?: string) => {
+export const exportTransactionsToPDF = async (transactions: Transaction[], accountFilter?: string, user?: User) => {
   const pdf = new jsPDF();
   
   // Title
   pdf.setFontSize(20);
   pdf.text('Transactions Report', 20, 30);
   
+  let currentY = 40;
+  
+  // User Information
+  if (user) {
+    pdf.setFontSize(12);
+    pdf.text(`User: ${user.fullName}`, 20, currentY);
+    currentY += 8;
+    pdf.setFontSize(10);
+    pdf.text(`Email: ${user.email}`, 20, currentY);
+    currentY += 8;
+  }
+  
   // Subtitle if filtered
   if (accountFilter) {
     pdf.setFontSize(12);
-    pdf.text(`Account: ${accountFilter}`, 20, 40);
+    pdf.text(`Account: ${accountFilter}`, 20, currentY);
+    currentY += 10;
   }
   
   // Date
   pdf.setFontSize(10);
-  pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, accountFilter ? 50 : 40);
+  pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, currentY);
+  currentY += 10;
   
   // Table headers
   pdf.setFontSize(10);
-  let y = accountFilter ? 70 : 60;
+  let y = currentY;
   pdf.text('Date', 20, y);
   pdf.text('Description', 45, y);
   pdf.text('Category', 90, y);
@@ -100,20 +122,12 @@ export const exportTransactionsToPDF = async (transactions: Transaction[], accou
       pdf.addPage();
       y = 30;
     }
-    
-    // Format date
     const date = new Date(transaction.transactionDateTime).toLocaleDateString();
     pdf.text(date, 20, y);
-    
-    // Description (truncate if too long)
     const description = (transaction.description || transaction.transactionCategoryName).substring(0, 15);
     pdf.text(description, 45, y);
-    
-    // Category (truncate if too long)
     const category = transaction.transactionCategoryName.substring(0, 12);
     pdf.text(category, 90, y);
-    
-    // Account (truncate if too long)
     const account = transaction.accountName.substring(0, 12);
     pdf.text(account, 125, y);
     

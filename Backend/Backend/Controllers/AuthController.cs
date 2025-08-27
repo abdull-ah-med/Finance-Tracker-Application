@@ -89,5 +89,29 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(new { Message = "Logout successful" });
     }
 
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateDTO userUpdateDTO)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId) || userId <= 0)
+            {
+                return BadRequest("Request Unauthorized");
+            }
+
+            var updateResult = await authService.UpdateUserAsync(userUpdateDTO, userId);
+            return StatusCode(updateResult.StatusCode, updateResult);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                Message = "An unexpected error occurred",
+                Details = ex.Message
+            });
+        }
+    }
 
 }

@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<TransactionCategory> TransactionCategories { get; set; }
     public DbSet<AccountCategory> AccountCategories { get; set; }
+    public DbSet<Transfer> Transfers { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true); 
@@ -59,6 +60,43 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithOne(t => t.AccountCategory)
             .HasForeignKey(t => t.AccountCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Transfer constraints
+        modelBuilder.Entity<Transfer>().Property(t => t.Amount).IsRequired().HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<Transfer>().Property(t => t.TransferDateTime).IsRequired();
+        modelBuilder.Entity<Transfer>().Property(t => t.ReferenceNumber).IsRequired().HasMaxLength(50);
+        modelBuilder.Entity<Transfer>().Property(t => t.Description).HasMaxLength(500);
+
+        // Transfer relationships
+        modelBuilder.Entity<Transfer>()
+            .HasOne(t => t.FromAccount)
+            .WithMany()
+            .HasForeignKey(t => t.FromAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Transfer>()
+            .HasOne(t => t.ToAccount)
+            .WithMany()
+            .HasForeignKey(t => t.ToAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Transfer>()
+            .HasOne(t => t.User)
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Transfer>()
+            .HasOne(t => t.DebitTransaction)
+            .WithMany()
+            .HasForeignKey(t => t.DebitTransactionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Transfer>()
+            .HasOne(t => t.CreditTransaction)
+            .WithMany()
+            .HasForeignKey(t => t.CreditTransactionId)
+            .OnDelete(DeleteBehavior.SetNull);
             
         modelBuilder.Entity<AccountCategory>().HasData(
             new AccountCategory { Id = 1, Name = "Checking" },

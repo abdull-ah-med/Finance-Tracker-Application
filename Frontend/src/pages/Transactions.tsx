@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Layout } from "../components/Layout";
 import { api } from "../utils/api";
 import { exportTransactionsToPDF } from "../utils/pdfExport";
+import { useAuth } from "../hooks/useAuth";
 import type { Transaction, Account, CreateTransaction, Category } from "../types";
 import { Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui";
 import { 
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 
 export function Transactions() {
+    const { user } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -78,7 +80,10 @@ export function Transactions() {
             ]);
 
             if (transactionsResponse.success) {
-                setTransactions(transactionsResponse.data?.transactions || []);
+                // Ensure transactions are sorted by date descending (latest first)
+                const sortedTransactions = (transactionsResponse.data?.transactions || [])
+                    .sort((a: Transaction, b: Transaction) => new Date(b.transactionDateTime).getTime() - new Date(a.transactionDateTime).getTime());
+                setTransactions(sortedTransactions);
             }
 
             if (accountsResponse.success) {
@@ -148,7 +153,12 @@ export function Transactions() {
         }
     };
 
-    const handleDeleteTransaction = async (id: number) => {
+    const handleDeleteTransaction = async (id: number, transaction: Transaction) => {
+        if (isTransferTransaction(transaction)) {
+            alert('Transfer-related transactions cannot be deleted. Please use the Transfers page to manage account transfers.');
+            return;
+        }
+        
         if (!confirm("Are you sure you want to delete this transaction?")) return;
 
         try {
@@ -163,10 +173,23 @@ export function Transactions() {
 
     const handleExportPDF = () => {
         const accountName = selectedAccount ? accounts.find(a => a.id === selectedAccount)?.name : undefined;
-        exportTransactionsToPDF(filteredTransactions, accountName);
+        exportTransactionsToPDF(filteredTransactions, accountName, user || undefined);
+    };
+
+    // Check if a transaction is a transfer-related transaction (cannot be edited/deleted)
+    const isTransferTransaction = (transaction: Transaction) => {
+        const desc = transaction.description?.toLowerCase() || '';
+        return desc.includes('transfer to') || 
+               desc.includes('transfer from') || 
+               desc.includes('inter account transfer');
     };
 
     const openUpdateDialog = (transaction: Transaction) => {
+        if (isTransferTransaction(transaction)) {
+            alert('Transfer-related transactions cannot be edited. Please use the Transfers page to manage account transfers.');
+            return;
+        }
+        
         setUpdateTransaction({
             id: transaction.id,
             amount: transaction.amount,
@@ -184,9 +207,10 @@ export function Transactions() {
         setUpdateTransaction(null);
     };
 
-    // When date filter is active, backend already filters by date, so only apply account filter locally
-    // When no date filter is active, apply account filter locally to all transactions
-    const filteredTransactions = selectedAccount ? transactions.filter((t) => t.accountId === selectedAccount) : transactions;
+   const filteredTransactions = (selectedAccount 
+        ? transactions.filter((t) => t.accountId === selectedAccount) 
+        : transactions
+    ).sort((a, b) => new Date(b.transactionDateTime).getTime() - new Date(a.transactionDateTime).getTime());
     
     const getTotalCredits = () => filteredTransactions.filter(t => t.transactionType === 'C').reduce((total, t) => total + t.amount, 0);
     const getTotalDebits = () => filteredTransactions.filter(t => t.transactionType === 'D').reduce((total, t) => total + t.amount, 0);
@@ -483,7 +507,12 @@ export function Transactions() {
                                                 }
                                             >
                                                 <DialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon"
+                                                                disabled={isTransferTransaction(transaction)}
+                                                                title={isTransferTransaction(transaction) ? "Transfer transactions cannot be edited" : "Edit transaction"}
+                                                            >
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
                                                 </DialogTrigger>
@@ -633,7 +662,13 @@ export function Transactions() {
                                                     )}
                                                 </DialogContent>
                                             </Dialog>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteTransaction(transaction.id)}>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        onClick={() => handleDeleteTransaction(transaction.id, transaction)}
+                                                        disabled={isTransferTransaction(transaction)}
+                                                        title={isTransferTransaction(transaction) ? "Transfer transactions cannot be deleted" : "Delete transaction"}
+                                                    >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>

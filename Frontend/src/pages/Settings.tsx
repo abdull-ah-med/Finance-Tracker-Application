@@ -9,7 +9,6 @@ import { Loader2 } from 'lucide-react';
 export function Settings() {
     const { user } = useAuth();
     const [name, setName] = useState(user?.fullName || '');
-    const [email, setEmail] = useState(user?.email || '');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -25,7 +24,7 @@ export function Settings() {
                 return;
             }
             
-            const response = await api.put('/auth/profile', { fullName: name, email });
+            const response = await api.put('/auth/profile', { fullName: name });
             if (response.success) {
                 setMessage('Profile updated successfully');
             } else {
@@ -50,7 +49,7 @@ export function Settings() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Profile Information</CardTitle>
-                        <CardDescription>Update your personal details.</CardDescription>
+                        <CardDescription>Update your name.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="settings-form">
@@ -70,12 +69,12 @@ export function Settings() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email"
-                                    required
-                                    disabled={isLoading}
+                                    value={user?.email || ''}
+                                    placeholder="Your email address"
+                                    disabled={true}
+                                    style={{ backgroundColor: 'var(--muted)', cursor: 'not-allowed' }}
                                 />
+                                <small className="text-muted">Email cannot be changed</small>
                             </div>
                             {message && (
                                 <div className={`text-sm ${message.includes('success') ? 'text-success' : 'text-error'}`}>
@@ -84,22 +83,9 @@ export function Settings() {
                             )}
                             <Button type="submit" disabled={isLoading}>
                                 {isLoading && <Loader2 size={16} className="spinner" />}
-                                Update Profile
+                                Update Name
                             </Button>
                         </form>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Account Management</CardTitle>
-                        <CardDescription>Manage your account settings.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="settings-actions">
-                        <Button variant="outline">Change Password</Button>
-                        <Button variant="outline">Export Data</Button>
-                        <Button variant="outline">Privacy Settings</Button>
-                        <Button variant="secondary" style={{ color: 'var(--color-error)' }}>Delete Account</Button>
                     </CardContent>
                 </Card>
             </div>

@@ -1,8 +1,8 @@
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetTrigger } from './ui';
-import { Wallet, BarChart3, LogOut, User, Settings, LayoutGrid, PieChart } from 'lucide-react';
+import { Wallet, BarChart3, LogOut, User, Settings, LayoutGrid, ArrowRightLeft } from 'lucide-react';
 import './Layout.css';
 
 
@@ -13,14 +13,19 @@ type LayoutProps = {
 export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
   const navigationItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { path: '/accounts', label: 'Accounts', icon: Wallet },
     { path: '/transactions', label: 'Transactions', icon: BarChart3 },
-    { path: '/analytics', label: 'Analytics', icon: PieChart },
+    { path: '/transfers', label: 'Transfers', icon: ArrowRightLeft },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -106,12 +111,12 @@ export function Layout({ children }: LayoutProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { /* Navigate to settings */ }}>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings size={16} style={{ marginRight: '8px' }} />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem onClick={() => handleLogout()}>
                 <LogOut size={16} style={{ marginRight: '8px' }} />
                 <span>Log out</span>
               </DropdownMenuItem>

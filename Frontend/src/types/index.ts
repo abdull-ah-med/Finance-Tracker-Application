@@ -51,6 +51,28 @@ export interface CreateAccount {
   accountCategoryId: number;
 }
 
+export interface Transfer {
+  id: number;
+  amount: number;
+  transferDateTime: string;
+  fromAccountId: number;
+  fromAccountName: string;
+  toAccountId: number;
+  toAccountName: string;
+  description: string;
+  referenceNumber: string;
+  debitTransactionId?: number;
+  creditTransactionId?: number;
+}
+
+export interface CreateTransfer {
+  amount: number;
+  transferDateTime: string;
+  fromAccountId: number;
+  toAccountId: number;
+  description?: string;
+}
+
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;

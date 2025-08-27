@@ -259,7 +259,7 @@ public class TransactionService : ITransactionService
             }
         };
     }
-
+    
     public async Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID, DateTime fromDate, DateTime toDate)
     {
         var accounts = await _context.Accounts.AnyAsync(a => a.UserId == userID);
@@ -325,29 +325,40 @@ public class TransactionService : ITransactionService
     public async Task<ServiceResult<ResponseTransactionDTO>> UpdateTransactionAsync(UpdateTransactionDTO updateTransactionDTO, int userId)
     {
         var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == updateTransactionDTO.Id);
-        var user = await _context.Accounts.Include(a => a.User).FirstOrDefaultAsync(a => a.UserId == userId && updateTransactionDTO.AccountId == a.Id);
-        if (transaction == null || user == null)
+        if (transaction == null)
         {
             return new ServiceResult<ResponseTransactionDTO>
             {
                 Success = false,
-                Message = "User or Transaction Not Found",
+                Message = "Transaction not found",
                 StatusCode = 404
             };
         }
 
         var oldTransactionAccount = await _context.Accounts.FindAsync(transaction.AccountId); // Old transaction Account
         var newTransactionAccount = await _context.Accounts.FindAsync(updateTransactionDTO.AccountId); // New transaction Account
-        if(newTransactionAccount != null && newTransactionAccount.UserId != user.Id)
+        
+        // var user = await _context.Accounts.Include(a => a.User).FirstOrDefaultAsync(a => a.UserId == userId && updateTransactionDTO.AccountId == a.Id);
+        // if(newTransactionAccount != null && newTransactionAccount.UserId != user.Id)
+        // {
+        //     return new ServiceResult<ResponseTransactionDTO>
+        //     {
+        //         Success = false,
+        //         Message = "Unauthorized to update this transaction",
+        //         StatusCode = 403,
+        //         // Data = oldTransactionAccount
+        //     };
+        // }
+        if (oldTransactionAccount == null || oldTransactionAccount.UserId != userId || newTransactionAccount == null || newTransactionAccount.UserId != userId)
         {
             return new ServiceResult<ResponseTransactionDTO>
             {
                 Success = false,
                 Message = "Unauthorized to update this transaction",
-                StatusCode = 403,
-                // Data = oldTransactionAccount
+                StatusCode = 403
             };
         }
+
         // Revert the old transaction
         if (oldTransactionAccount != null)
         {
@@ -459,7 +470,77 @@ public class TransactionService : ITransactionService
         };
     }
 
+    public async Task<ServiceResult<ResponseTransactionDTO>> InterAccountTransferAsync(AccountTransactionDTO accountTransactionDTO)
+    {
+        var senderAccount = await _context.Accounts.FindAsync(accountTransactionDTO.SenderAccountId);
+        var receiverAccount = await _context.Accounts.FindAsync(accountTransactionDTO.ReceiverAccountId);
 
+        if (senderAccount == null || receiverAccount == null)
+        {
+            return new ServiceResult<ResponseTransactionDTO>
+            {
+                Success = false,
+                Message = "Sender or Receiver account not found",
+                StatusCode = 404
+            };
+        }
+
+        if (senderAccount.Balance < accountTransactionDTO.Amount)
+        {
+            return new ServiceResult<ResponseTransactionDTO>
+            {
+                Success = false,
+                Message = "Insufficient balance in sender account",
+                StatusCode = 400
+            };
+        }
+
+        // Perform the transfer
+        senderAccount.Balance -= accountTransactionDTO.Amount;
+        receiverAccount.Balance += accountTransactionDTO.Amount;
+
+        var sendertransaction = new Transaction
+        {
+            Amount = accountTransactionDTO.Amount,
+            TransactionDateTime = accountTransactionDTO.TransactionDateTime,
+            AccountId = senderAccount.Id,
+            TransactionType = 'D',
+            Description = "Inter Account Transfer To " + receiverAccount.Id,
+            TransactionCategoryId = accountTransactionDTO.TransactionCategoryId
+            
+        };
+        var receiverTransaction = new Transaction
+        {
+            Amount = accountTransactionDTO.Amount,
+            TransactionDateTime = accountTransactionDTO.TransactionDateTime,
+            AccountId = receiverAccount.Id,
+            TransactionType = 'C',
+            Description = "Inter Account Transfer From " + senderAccount.Id,
+            TransactionCategoryId = accountTransactionDTO.TransactionCategoryId
+            
+        };
+
+        _context.Transactions.Add(sendertransaction);
+        _context.Transactions.Add(receiverTransaction);
+        await _context.SaveChangesAsync();
+
+        return new ServiceResult<ResponseTransactionDTO>
+        {
+            Success = true,
+            Message = "Inter-account transfer successful",
+            StatusCode = 200,
+            Data = new ResponseTransactionDTO
+            {
+                Id = senderAccount.Id,
+                Amount = sendertransaction.Amount,
+                TransactionDateTime = sendertransaction.TransactionDateTime,
+                Description = sendertransaction.Description,
+                AccountId = sendertransaction.AccountId,
+                TransactionCategoryId = sendertransaction.TransactionCategoryId,
+                TransactionType = sendertransaction.TransactionType
+            }
+        };
+    }
     public async Task<ServiceResult<string>> DeleteTransactionAsync(int transactionID, int userId)
     {
         var transaction = await _context.Transactions.FindAsync(transactionID);
