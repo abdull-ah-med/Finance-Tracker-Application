@@ -259,6 +259,69 @@ public class TransactionService : ITransactionService
             }
         };
     }
+
+    public async Task<ServiceResult<TransactionResponseListDTO>> GetTransactions(int userID, DateTime fromDate, DateTime toDate)
+    {
+        var accounts = await _context.Accounts.AnyAsync(a => a.UserId == userID);
+        if (!accounts)
+        {
+            return new ServiceResult<TransactionResponseListDTO>
+            {
+                Success = false,
+                Message = "User has no accounts.",
+                StatusCode = 404
+            };
+        }
+
+        var transactions = await _context.Transactions
+            .Include(t => t.Account)
+            .Include(t => t.TransactionCategory)
+            .Where(t => t.Account.UserId == userID && 
+                       t.TransactionDateTime >= fromDate && 
+                       t.TransactionDateTime <= toDate)
+            .OrderByDescending(t => t.TransactionDateTime)
+            .ToListAsync();
+
+        if (transactions == null || !transactions.Any())
+        {
+            return new ServiceResult<TransactionResponseListDTO>
+            {
+                Success = true,
+                Message = "There are no transactions in the specified date range.",
+                StatusCode = 200,
+                Data = new TransactionResponseListDTO
+                {
+                    Transactions = new List<ResponseTransactionDTO>(),
+                    TotalCount = 0
+                }
+            };
+        }
+
+        var responseTransactions = transactions.Select(t => new ResponseTransactionDTO
+        {
+            Id = t.Id,
+            Amount = t.Amount,
+            TransactionDateTime = t.TransactionDateTime,
+            Description = t.Description,
+            AccountId = t.AccountId,
+            AccountName = t.Account.Name,
+            TransactionCategoryId = t.TransactionCategoryId,
+            TransactionCategoryName = t.TransactionCategory.Name,
+            TransactionType = t.TransactionType
+        }).ToList();
+
+        return new ServiceResult<TransactionResponseListDTO>
+        {
+            Success = true,
+            StatusCode = 200,
+            Data = new TransactionResponseListDTO
+            {
+                Transactions = responseTransactions,
+                TotalCount = responseTransactions.Count
+            }
+        };
+    }
+
     public async Task<ServiceResult<ResponseTransactionDTO>> UpdateTransactionAsync(UpdateTransactionDTO updateTransactionDTO, int userId)
     {
         var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == updateTransactionDTO.Id);
@@ -275,16 +338,16 @@ public class TransactionService : ITransactionService
 
         var oldTransactionAccount = await _context.Accounts.FindAsync(transaction.AccountId); // Old transaction Account
         var newTransactionAccount = await _context.Accounts.FindAsync(updateTransactionDTO.AccountId); // New transaction Account
-        // if(oldTransactionAccount.UserId != user.Id || (newTransactionAccount != null && newTransactionAccount.UserId != user.Id))
-        // {
-        //     return new ServiceResult<ResponseTransactionDTO>
-        //     {
-        //         Success = false,
-        //         Message = "Unauthorized to update this transaction",
-        //         StatusCode = 403,
-        //         // Data = oldTransactionAccount
-        //     };
-        // }
+        if(newTransactionAccount != null && newTransactionAccount.UserId != user.Id)
+        {
+            return new ServiceResult<ResponseTransactionDTO>
+            {
+                Success = false,
+                Message = "Unauthorized to update this transaction",
+                StatusCode = 403,
+                // Data = oldTransactionAccount
+            };
+        }
         // Revert the old transaction
         if (oldTransactionAccount != null)
         {

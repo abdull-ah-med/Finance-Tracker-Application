@@ -25,6 +25,7 @@ export function Transactions() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+    const [selectedDateFilter, setSelectedDateFilter] = useState<"1D" | "7D" | "30D" | null>(null);
     const [newTransaction, setNewTransaction] = useState<CreateTransaction>({
         amount: 0,
         transactionDateTime: new Date().toISOString().slice(0, 16),
@@ -39,8 +40,39 @@ export function Transactions() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
+            // Build URL with date filter if selected
+            let transactionsUrl = "/user/transactions/fetch";
+            const urlParams = new URLSearchParams();
+            
+            if (selectedDateFilter) {
+                const now = new Date();
+                const toDate = now.toISOString();
+                let fromDate: string;
+                
+                switch (selectedDateFilter) {
+                    case "1D":
+                        fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+                        break;
+                    case "7D":
+                        fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                        break;
+                    case "30D":
+                        fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                        break;
+                    default:
+                        fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                }
+                
+                urlParams.append("fromDate", fromDate);
+                urlParams.append("toDate", toDate);
+            }
+            
+            if (urlParams.toString()) {
+                transactionsUrl += `?${urlParams.toString()}`;
+            }
+
             const [transactionsResponse, accountsResponse, categoriesResponse] = await Promise.all([
-                api.get("/user/transactions/fetch"),
+                api.get(transactionsUrl),
                 api.get("/user/accounts/list"),
                 api.get("/categories/transactions"),
             ]);
@@ -69,7 +101,7 @@ export function Transactions() {
         } finally {
             setIsLoading(false);
         }
-    }, [newTransaction.accountId]);
+    }, [newTransaction.accountId, selectedDateFilter]);
 
     useEffect(() => {
         fetchData();
@@ -152,6 +184,8 @@ export function Transactions() {
         setUpdateTransaction(null);
     };
 
+    // When date filter is active, backend already filters by date, so only apply account filter locally
+    // When no date filter is active, apply account filter locally to all transactions
     const filteredTransactions = selectedAccount ? transactions.filter((t) => t.accountId === selectedAccount) : transactions;
     
     const getTotalCredits = () => filteredTransactions.filter(t => t.transactionType === 'C').reduce((total, t) => total + t.amount, 0);
@@ -379,7 +413,7 @@ export function Transactions() {
                         value={selectedAccount?.toString() || "all"}
                         onValueChange={(value) => setSelectedAccount(value === "all" ? null : parseInt(value))}
                     >
-                                    <SelectTrigger className="w-64">
+                                    <SelectTrigger className="w-48">
                             <SelectValue placeholder="Select account" />
                         </SelectTrigger>
                                     <SelectContent>
@@ -391,6 +425,31 @@ export function Transactions() {
                             ))}
                         </SelectContent>
                     </Select>
+                    
+                                <Label>Filter by date:</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant={selectedDateFilter === "1D" ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => setSelectedDateFilter(selectedDateFilter === "1D" ? null : "1D")}
+                                    >
+                                        1D
+                                    </Button>
+                                    <Button
+                                        variant={selectedDateFilter === "7D" ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => setSelectedDateFilter(selectedDateFilter === "7D" ? null : "7D")}
+                                    >
+                                        7D
+                                    </Button>
+                                    <Button
+                                        variant={selectedDateFilter === "30D" ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => setSelectedDateFilter(selectedDateFilter === "30D" ? null : "30D")}
+                                    >
+                                        30D
+                                    </Button>
+                                </div>
                 </div>
                         </CardHeader>
                         <CardContent>

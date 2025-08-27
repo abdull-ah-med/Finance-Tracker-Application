@@ -36,7 +36,7 @@ public class TransactionController(ITransactionService TS) : ControllerBase
         }
     }
     [HttpGet("fetch")]
-    public async Task<IActionResult> GetTransactionAsync([FromQuery] int? accountId, int? TransactionCategoryId)
+    public async Task<IActionResult> GetTransactionAsync([FromQuery] int? accountId, int? TransactionCategoryId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
     {
         try
         {
@@ -46,7 +46,13 @@ public class TransactionController(ITransactionService TS) : ControllerBase
                 return BadRequest("Request Unauthorized");
             }
 
-            if (accountId > 0 && TransactionCategoryId > 0)
+            // Check if date filtering is requested
+            if (fromDate.HasValue && toDate.HasValue)
+            {
+                var transactionServiceResult = await TS.GetTransactions(userId, fromDate.Value, toDate.Value);
+                return StatusCode(transactionServiceResult.StatusCode, transactionServiceResult);
+            }
+            else if (accountId > 0 && TransactionCategoryId > 0)
             {
                 var transactionServiceResult = await TS.GetTransactions(userId, accountId.Value, TransactionCategoryId.Value);
                 return StatusCode(transactionServiceResult.StatusCode, transactionServiceResult);
